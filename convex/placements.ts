@@ -1,0 +1,70 @@
+import { query, mutation } from "./_generated/server";
+import { v } from "convex/values";
+import { auth } from "./auth";
+
+export const submit = mutation({
+  args: {
+    comparisonId: v.id("comparisons"),
+    x: v.number(),
+    y: v.number(),
+  },
+  handler: async (ctx, { comparisonId, x, y }) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const existing = await ctx.db
+      .query("placements")
+      .withIndex("by_user_comparison", (q) =>
+        q.eq("userId", userId).eq("comparisonId", comparisonId),
+      )
+      .unique();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, { x, y });
+      return existing._id;
+    }
+    return await ctx.db.insert("placements", { userId, comparisonId, x, y });
+  },
+});
+
+export const getMine = query({
+  args: { comparisonId: v.optional(v.id("comparisons")) },
+  handler: async (ctx, { comparisonId }) => {
+    if (!comparisonId) return null;
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return null;
+    return await ctx.db
+      .query("placements")
+      .withIndex("by_user_comparison", (q) =>
+        q.eq("userId", userId).eq("comparisonId", comparisonId),
+      )
+      .unique();
+  },
+});
+
+export const getAll = query({
+  args: { comparisonId: v.optional(v.id("comparisons")) },
+  handler: async (ctx, { comparisonId }) => {
+    if (!comparisonId) return [];
+    const userId = await auth.getUserId(ctx);
+    if (!userId) return [];
+
+    const all = await ctx.db
+      .query("placements")
+      .withIndex("by_comparison", (q) => q.eq("comparisonId", comparisonId))
+      .collect();
+
+    const withUsers = await Promise.all(
+      all.map(async (p) => {
+        const user = await ctx.db.get(p.userId);
+        return {
+          ...p,
+          name: user?.name ?? "Anonymous",
+          image: user?.image ?? null,
+          isMe: p.userId === userId,
+        };
+      }),
+    );
+    return withUsers;
+  },
+});

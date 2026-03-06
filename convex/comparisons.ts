@@ -1,0 +1,94 @@
+import { query, mutation } from "./_generated/server";
+import { v } from "convex/values";
+import { auth } from "./auth";
+
+export const get = query({
+  args: { id: v.string() },
+  handler: async (ctx, { id }) => {
+    const userId = await auth.getUserId(ctx);
+    const normalized = ctx.db.normalizeId("comparisons", id);
+    if (!normalized) return null;
+    const comparison = await ctx.db.get(normalized);
+    if (!comparison) return null;
+    return { ...comparison, isMine: comparison.creatorId === userId };
+  },
+});
+
+export const list = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    const all = await ctx.db.query("comparisons").order("desc").collect();
+    const visible = all.filter(
+      (c) => !c.private || c.creatorId === userId,
+    );
+    const withCounts = await Promise.all(
+      visible.map(async (c) => {
+        const placements = await ctx.db
+          .query("placements")
+          .withIndex("by_comparison", (q) => q.eq("comparisonId", c._id))
+          .collect();
+        return { ...c, placementCount: placements.length };
+      }),
+    );
+    return withCounts;
+  },
+});
+
+export const create = mutation({
+  args: {
+    name: v.optional(v.string()),
+    private: v.optional(v.boolean()),
+    xLabelLeft: v.optional(v.string()),
+    xLabelRight: v.optional(v.string()),
+    yLabelTop: v.optional(v.string()),
+    yLabelBottom: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    if (!args.xLabelLeft && !args.xLabelRight)
+      throw new Error("At least one x-axis label required");
+    if (!args.yLabelTop && !args.yLabelBottom)
+      throw new Error("At least one y-axis label required");
+    const date = new Date().toISOString().slice(0, 10);
+    return await ctx.db.insert("comparisons", { date, creatorId: userId, ...args });
+  },
+});
+
+export const togglePrivate = mutation({
+  args: { id: v.id("comparisons") },
+  handler: async (ctx, { id }) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const comparison = await ctx.db.get(id);
+    if (!comparison) throw new Error("Not found");
+    if (comparison.creatorId !== userId) throw new Error("Not authorized");
+    await ctx.db.patch(id, { private: !comparison.private });
+  },
+});
+
+export const remove = mutation({
+  args: { id: v.id("comparisons") },
+  handler: async (ctx, { id }) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const comparison = await ctx.db.get(id);
+    if (!comparison) throw new Error("Not found");
+    if (comparison.creatorId !== userId) throw new Error("Not authorized");
+
+    const placements = await ctx.db
+      .query("placements")
+      .withIndex("by_comparison", (q) => q.eq("comparisonId", id))
+      .collect();
+    for (const p of placements) await ctx.db.delete(p._id);
+
+    const fixes = await ctx.db
+      .query("fixes")
+      .withIndex("by_comparison", (q) => q.eq("comparisonId", id))
+      .collect();
+    for (const f of fixes) await ctx.db.delete(f._id);
+
+    await ctx.db.delete(id);
+  },
+});
