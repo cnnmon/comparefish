@@ -10,6 +10,7 @@ const schema = defineSchema({
     creatorId: v.optional(v.id("users")),
     name: v.optional(v.string()),
     private: v.optional(v.boolean()),
+    expiresAt: v.optional(v.number()),
     xLabelLeft: v.optional(v.string()),
     xLabelRight: v.optional(v.string()),
     yLabelTop: v.optional(v.string()),

@@ -12,6 +12,9 @@ export const submit = mutation({
   handler: async (ctx, { targetUserId, comparisonId, x, y }) => {
     const fixerId = await auth.getUserId(ctx);
     if (!fixerId) throw new Error("Not authenticated");
+    const comparison = await ctx.db.get(comparisonId);
+    if (comparison?.expiresAt && Date.now() >= comparison.expiresAt)
+      throw new Error("This comparison is locked");
 
     const existing = await ctx.db
       .query("fixes")

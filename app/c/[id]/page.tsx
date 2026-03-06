@@ -1,48 +1,31 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import { Chart } from "../../Chart";
 import { ComparisonPicker } from "../../ComparisonPicker";
+import { Shell, SignIn } from "../../Shell";
+import { ResultsChart } from "../../ResultsChart";
 
-const PIC_COLORS = [
-  "#f87171", "#fb923c", "#fbbf24", "#a3e635", "#34d399",
-  "#22d3ee", "#60a5fa", "#a78bfa", "#f472b6", "#e879f9",
-];
-
-function nameToColor(name: string) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++)
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return PIC_COLORS[Math.abs(hash) % PIC_COLORS.length];
-}
-
-function ProfilePic({ user }: { user: { name?: string; image?: string } | null | undefined }) {
-  const [failed, setFailed] = useState(false);
-  if (!user) return null;
-  const name = user.name || "?";
-  if (user.image && !failed) {
-    return (
-      <img
-        src={user.image}
-        alt=""
-        className="h-7 w-7 rounded-full"
-        onError={() => setFailed(true)}
-      />
-    );
-  }
-  return (
-    <div
-      className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium text-white"
-      style={{ backgroundColor: nameToColor(name) }}
-    >
-      {name[0].toUpperCase()}
-    </div>
-  );
+function useCountdown(expiresAt: number | undefined) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!expiresAt || Date.now() >= expiresAt) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [expiresAt]);
+  if (!expiresAt) return null;
+  const diff = expiresAt - now;
+  if (diff <= 0) return "Locked";
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  if (h >= 24) return `${Math.floor(h / 24)}d ${h % 24}h remaining`;
+  if (h > 0) return `${h}h ${m}m remaining`;
+  return `${m}m ${s}s remaining`;
 }
 
 function ComparisonView({
@@ -54,45 +37,66 @@ function ComparisonView({
 }) {
   const comparison = useQuery(api.comparisons.get, { id: comparisonId });
   const validId = comparison?._id ?? null;
+  const locked = comparison?.locked ?? false;
   const mine = useQuery(api.placements.getMine, validId ? { comparisonId: validId } : "skip");
-  const all = useQuery(api.placements.getAll, validId ? { comparisonId: validId } : "skip");
-  const allFixes = useQuery(api.fixes.getAll, validId ? { comparisonId: validId } : "skip");
+  const all = useQuery(api.placements.getAll, validId && !locked ? { comparisonId: validId } : "skip");
+  const allFixes = useQuery(api.fixes.getAll, validId && !locked ? { comparisonId: validId } : "skip");
+  const results = useQuery(api.placements.getResults, validId && locked ? { comparisonId: validId } : "skip");
   const submitPlacement = useMutation(api.placements.submit);
   const submitFix = useMutation(api.fixes.submit);
   const deleteFix = useMutation(api.fixes.remove);
   const deleteComparison = useMutation(api.comparisons.remove);
   const togglePrivate = useMutation(api.comparisons.togglePrivate);
   const user = useQuery(api.users.currentUser);
+  const countdown = useCountdown(comparison?.expiresAt);
 
   if (!comparison) return null;
 
   return (
-    <>
-      <Chart
-        xLabelLeft={comparison.xLabelLeft}
-        xLabelRight={comparison.xLabelRight}
-        yLabelTop={comparison.yLabelTop}
-        yLabelBottom={comparison.yLabelBottom}
-        myPlacement={mine ? { x: mine.x, y: mine.y } : null}
-        myImage={user?.image ?? null}
-        myName={user?.name ?? "Me"}
-        allPlacements={all ?? []}
-        fixes={allFixes ?? []}
-        onPlace={async (x, y) => {
-          await submitPlacement({ comparisonId, x, y });
-        }}
-        onFix={async (targetUserId, x, y) => {
-          await submitFix({ targetUserId, comparisonId, x, y });
-        }}
-        onDeleteFix={async (fixId) => {
-          await deleteFix({ fixId });
-        }}
-      />
-
-      {(all?.length ?? 0) > 0 && (
-        <p className="text-center text-sm text-zinc-500">
-          {all!.length} {all!.length === 1 ? "person" : "people"} placed
+    <div className="flex flex-col items-center gap-4">
+      {countdown && (
+        <p className={`text-center text-sm font-medium ${locked ? "text-zinc-500" : "text-amber-600"}`}>
+          {countdown}
         </p>
+      )}
+
+      {locked ? (
+        <ResultsChart
+          xLabelLeft={comparison.xLabelLeft}
+          xLabelRight={comparison.xLabelRight}
+          yLabelTop={comparison.yLabelTop}
+          yLabelBottom={comparison.yLabelBottom}
+          results={results ?? []}
+        />
+      ) : (
+        <>
+          <Chart
+            xLabelLeft={comparison.xLabelLeft}
+            xLabelRight={comparison.xLabelRight}
+            yLabelTop={comparison.yLabelTop}
+            yLabelBottom={comparison.yLabelBottom}
+            myPlacement={mine ? { x: mine.x, y: mine.y } : null}
+            myImage={user?.image ?? null}
+            myName={user?.name ?? "Me"}
+            allPlacements={all ?? []}
+            fixes={allFixes ?? []}
+            onPlace={async (x, y) => {
+              await submitPlacement({ comparisonId, x, y });
+            }}
+            onFix={async (targetUserId, x, y) => {
+              await submitFix({ targetUserId, comparisonId, x, y });
+            }}
+            onDeleteFix={async (fixId) => {
+              await deleteFix({ fixId });
+            }}
+          />
+
+          {(all?.length ?? 0) > 0 && (
+            <p className="text-center text-sm text-zinc-500">
+              {all!.length} {all!.length === 1 ? "person" : "people"} placed
+            </p>
+          )}
+        </>
       )}
 
       {comparison.isMine && (
@@ -115,67 +119,18 @@ function ComparisonView({
           </button>
         </div>
       )}
-    </>
-  );
-}
-
-function SignIn() {
-  const { signIn } = useAuthActions();
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="flex w-full max-w-sm flex-col items-center gap-6 px-6">
-        <h1 className="text-2xl font-semibold tracking-tight">comparison</h1>
-        <p className="text-center text-sm text-zinc-500">
-          Place yourself on the chart. See where everyone lands.
-        </p>
-        <button
-          onClick={() => void signIn("google")}
-          className="flex h-11 w-full items-center justify-center gap-3 rounded-lg border border-zinc-200 px-5 text-sm font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-50 dark:hover:bg-zinc-800"
-        >
-          <svg className="h-5 w-5" viewBox="0 0 24 24">
-            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
-            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-          </svg>
-          Sign in with Google
-        </button>
-      </div>
     </div>
   );
 }
 
 function ComparisonPage({ comparisonId }: { comparisonId: Id<"comparisons"> }) {
   const router = useRouter();
-  const { signOut } = useAuthActions();
-  const user = useQuery(api.users.currentUser);
 
   return (
-    <div className="flex min-h-screen justify-center">
-      <div className="flex w-full max-w-lg flex-col items-center gap-6 px-6 py-8">
-        <div className="flex w-full items-center justify-between">
-          <h1
-            className="text-lg font-semibold tracking-tight cursor-pointer"
-            onClick={() => router.push("/")}
-          >
-            comparison
-          </h1>
-          <div className="flex items-center gap-3">
-            <ProfilePic user={user} />
-            <button
-              onClick={() => void signOut()}
-              className="text-sm text-zinc-400 hover:text-zinc-600"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-
-        <ComparisonPicker selectedId={comparisonId} />
-
-        <ComparisonView comparisonId={comparisonId} onDeleted={() => router.push("/")} />
-      </div>
-    </div>
+    <Shell>
+      <ComparisonPicker selectedId={comparisonId} />
+      <ComparisonView comparisonId={comparisonId} onDeleted={() => router.push("/")} />
+    </Shell>
   );
 }
 

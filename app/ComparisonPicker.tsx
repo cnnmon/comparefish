@@ -6,6 +6,17 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
 
+function formatTimeLeft(expiresAt: number | undefined) {
+  if (!expiresAt) return null;
+  const diff = expiresAt - Date.now();
+  if (diff <= 0) return "Locked";
+  const hours = Math.floor(diff / 3600000);
+  const mins = Math.floor((diff % 3600000) / 60000);
+  if (hours >= 24) return `${Math.floor(hours / 24)}d left`;
+  if (hours > 0) return `${hours}h left`;
+  return `${mins}m left`;
+}
+
 function formatLabel(p: {
   name?: string;
   xLabelLeft?: string;
@@ -31,6 +42,7 @@ export function ComparisonPicker({
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
+  const [durationHours, setDurationHours] = useState(24);
   const [xLeft, setXLeft] = useState("");
   const [xRight, setXRight] = useState("");
   const [yTop, setYTop] = useState("");
@@ -58,6 +70,7 @@ export function ComparisonPicker({
     const id = await createComparison({
       name: name.trim() || undefined,
       private: isPrivate || undefined,
+      durationHours,
       xLabelLeft: xLeft.trim() || undefined,
       xLabelRight: xRight.trim() || undefined,
       yLabelTop: yTop.trim() || undefined,
@@ -66,6 +79,7 @@ export function ComparisonPicker({
     router.push(`/c/${id}`);
     setName("");
     setIsPrivate(false);
+    setDurationHours(24);
     setXLeft("");
     setXRight("");
     setYTop("");
@@ -127,7 +141,12 @@ export function ComparisonPicker({
                   )}
                   {formatLabel(c)}
                 </span>
-                <span className="ml-2 text-xs tabular-nums text-zinc-400">
+                <span className="ml-2 flex items-center gap-2 text-xs tabular-nums text-zinc-400">
+                  {c.expiresAt && (
+                    <span className={c.expiresAt <= Date.now() ? "text-zinc-500 font-medium" : "text-amber-500"}>
+                      {formatTimeLeft(c.expiresAt)}
+                    </span>
+                  )}
                   {c.placementCount}
                 </span>
               </button>
@@ -188,6 +207,21 @@ export function ComparisonPicker({
                 />
                 Private (only visible to you)
               </label>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-zinc-500">Locks in</span>
+                <select
+                  value={durationHours}
+                  onChange={(e) => setDurationHours(Number(e.target.value))}
+                  className="h-7 rounded border border-zinc-200 bg-transparent px-1.5 text-xs dark:border-zinc-700"
+                >
+                  <option value={1}>1 hour</option>
+                  <option value={6}>6 hours</option>
+                  <option value={12}>12 hours</option>
+                  <option value={24}>1 day</option>
+                  <option value={72}>3 days</option>
+                  <option value={168}>1 week</option>
+                </select>
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => void handleCreate()}

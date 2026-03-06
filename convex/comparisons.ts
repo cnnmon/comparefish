@@ -10,7 +10,8 @@ export const get = query({
     if (!normalized) return null;
     const comparison = await ctx.db.get(normalized);
     if (!comparison) return null;
-    return { ...comparison, isMine: comparison.creatorId === userId };
+    const locked = comparison.expiresAt ? Date.now() >= comparison.expiresAt : false;
+    return { ...comparison, isMine: comparison.creatorId === userId, locked };
   },
 });
 
@@ -39,20 +40,23 @@ export const create = mutation({
   args: {
     name: v.optional(v.string()),
     private: v.optional(v.boolean()),
+    durationHours: v.optional(v.number()),
     xLabelLeft: v.optional(v.string()),
     xLabelRight: v.optional(v.string()),
     yLabelTop: v.optional(v.string()),
     yLabelBottom: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, { durationHours, ...rest }) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-    if (!args.xLabelLeft && !args.xLabelRight)
+    if (!rest.xLabelLeft && !rest.xLabelRight)
       throw new Error("At least one x-axis label required");
-    if (!args.yLabelTop && !args.yLabelBottom)
+    if (!rest.yLabelTop && !rest.yLabelBottom)
       throw new Error("At least one y-axis label required");
     const date = new Date().toISOString().slice(0, 10);
-    return await ctx.db.insert("comparisons", { date, creatorId: userId, ...args });
+    const hours = durationHours ?? 24;
+    const expiresAt = Date.now() + hours * 60 * 60 * 1000;
+    return await ctx.db.insert("comparisons", { date, creatorId: userId, expiresAt, ...rest });
   },
 });
 
