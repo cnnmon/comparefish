@@ -5,6 +5,7 @@ import { toPos, resolveImage } from "./utils";
 import { Avatar, Quadrants, Axes, AxisLabels } from "./Avatar";
 import { useChart } from "./ChartProvider";
 import { motion } from "framer-motion";
+import { getUserName } from "../utils";
 
 export { ChartProvider } from "./ChartProvider";
 
@@ -76,7 +77,11 @@ export default function Chart() {
     hoveredUserId && !fixTarget && !editingSelf
       ? hoveredUserId === myUserId
         ? "Re-place yourself"
-        : `Fix ${allPlacements.find((p) => p.userId === hoveredUserId)?.name}'s placement`
+        : `Fix ${getUserName({
+            id: hoveredUserId ?? "unknown",
+            name:
+              allPlacements.find((p) => p.userId === hoveredUserId)?.name ?? "",
+          })}'s placement`
       : null;
 
   // Users connected to the hovered fish via fixes
@@ -185,7 +190,14 @@ export default function Chart() {
                 avatar: f.targetAvatar,
               })}
               name={f.targetName}
-              label={f.isMine ? "Your fix" : `${f.fixerName}'s fix`}
+              label={
+                f.isMine
+                  ? "Your fix"
+                  : `${getUserName({
+                      id: f.fixerId ?? "unknown",
+                      name: f.fixerName,
+                    })}'s fix`
+              }
               status={
                 f.targetUserId === activeFixTargetId
                   ? "fixing"

@@ -12,6 +12,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { Modal } from "../Modal";
 import { useMutation } from "convex/react";
 import { useChart } from "../Chart/ChartProvider";
+import { getUserName } from "../utils";
 
 export default function Shell({
   children,
@@ -59,7 +60,12 @@ export default function Shell({
             comparison
           </h1>
           <div className="flex items-center gap-3">
-            <p className="text-sm">{user?.name}</p>
+            <p className="text-sm">
+              {getUserName({
+                id: user?._id ?? "unknown",
+                name: user?.name ?? "",
+              })}
+            </p>
             <Image
               src={
                 resolveImage({

@@ -8,6 +8,7 @@ import { api } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
 import { formatTimeLeft } from "@/components/Chart/ChartProvider";
 import { twMerge } from "tailwind-merge";
+import { getUserName } from "@/components/utils";
 
 function formatLabel(p: {
   name?: string;
@@ -95,8 +96,11 @@ export function ComparisonPicker({
           {selected ? (
             <>
               <u>
-                {formatLabel(selected)}
-                {selected.creatorName && `by ${selected.creatorName}`}
+                {formatLabel(selected)} by{" "}
+                {getUserName({
+                  id: selected.creatorId ?? "unknown",
+                  name: selected.creatorName,
+                })}
               </u>
             </>
           ) : (
