@@ -205,7 +205,7 @@ export function ComparisonPicker({
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="flex w-full max-w-2xl gap-5 rounded-xl border border-[var(--foreground)] bg-[var(--background)] p-5"
+              className="flex w-full max-w-2xl gap-5 rounded-xl border border-[var(--foreground)] bg-[var(--background)] p-5 m-5"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex flex-1 flex-col gap-3">

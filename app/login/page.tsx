@@ -30,7 +30,7 @@ export default function Login() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="flex w-full max-w-sm flex-col items-center text-center gap-6"
+        className="flex w-full max-w-sm flex-col items-center text-center gap-6 p-2"
       >
         <motion.div
           initial={{ opacity: 0 }}
@@ -38,8 +38,8 @@ export default function Login() {
           transition={{ delay: 0.2, duration: 0.4 }}
           className="flex flex-col items-center gap-2"
         >
-          <h1 className="text-7xl font-semibold tracking-tight">comparison</h1>
-          <p>plot yourself. correct the placements of others.</p>
+          <h1 className="text-7xl font-semibold tracking-tight">comparefish</h1>
+          <p>plot yourself & correct the placements of others.</p>
         </motion.div>
         <motion.button
           initial={{ opacity: 0 }}
