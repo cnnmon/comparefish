@@ -225,20 +225,20 @@ export function ComparisonPicker({
                   onChange={(e) => set("name", e.target.value)}
                   placeholder="Name (optional)"
                   autoFocus
-                  className="h-9 rounded-lg border border-zinc-200 bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                  className="h-9 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
                 />
                 <div className="flex gap-2">
                   <input
                     value={settings.xLeft}
                     onChange={(e) => set("xLeft", e.target.value)}
                     placeholder="← left"
-                    className="h-9 flex-1 rounded-lg border border-zinc-200 bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                    className="h-9 flex-1 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
                   />
                   <input
                     value={settings.xRight}
                     onChange={(e) => set("xRight", e.target.value)}
                     placeholder="right →"
-                    className="h-9 flex-1 rounded-lg border border-zinc-200 bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                    className="h-9 flex-1 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -246,26 +246,30 @@ export function ComparisonPicker({
                     value={settings.yTop}
                     onChange={(e) => set("yTop", e.target.value)}
                     placeholder="↑ top"
-                    className="h-9 flex-1 rounded-lg border border-zinc-200 bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                    className="h-9 flex-1 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
                   />
                   <input
                     value={settings.yBottom}
                     onChange={(e) => set("yBottom", e.target.value)}
                     placeholder="bottom ↓"
-                    className="h-9 flex-1 rounded-lg border border-zinc-200 bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                    className="h-9 flex-1 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
                   />
                 </div>
-                <label className="flex items-center gap-2 text-zinc-500">
-                  <input
-                    type="checkbox"
-                    checked={settings.isPrivate}
-                    onChange={(e) => set("isPrivate", e.target.checked)}
-                    className="rounded"
-                  />
-                  Private (only visible to you)
-                </label>
                 <div className="flex items-center gap-2">
-                  <span className="text-zinc-500">Locks in</span>
+                  <span>Visibility</span>
+                  <select
+                    value={settings.isPrivate ? "private" : "public"}
+                    onChange={(e) =>
+                      set("isPrivate", e.target.value === "private")
+                    }
+                    className="h-8 rounded-lg border border-zinc-200 bg-transparent px-2 dark:border-zinc-700"
+                  >
+                    <option value="public">Public (shown in dropdown)</option>
+                    <option value="private">Private (share via link only)</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span>Locks in</span>
                   <select
                     value={settings.durationHours}
                     onChange={(e) =>
