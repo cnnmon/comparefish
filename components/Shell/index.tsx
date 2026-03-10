@@ -158,7 +158,7 @@ export default function Shell({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="flex w-full max-w-2xl flex-col items-center gap-6 px-6 py-8 mt-10"
+        className="flex w-full max-w-2xl flex-col items-center gap-6 px-0 sm:px-6 py-8 mt-10"
       >
         <motion.div
           initial={{ opacity: 0, y: 10 }}

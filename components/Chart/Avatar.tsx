@@ -6,7 +6,7 @@ import Image from "next/image";
 
 export function Avatar({
   pos,
-  size = 100,
+  size = 14,
   image,
   name,
   label,
@@ -75,8 +75,8 @@ export function Avatar({
       <div
         className="rounded-full flex items-center justify-center shrink-0"
         style={{
-          width: size,
-          height: size,
+          width: `${size}cqw`,
+          height: `${size}cqw`,
         }}
       >
         {showImage ? (
@@ -92,8 +92,8 @@ export function Avatar({
           <div
             className="rounded-full flex items-center justify-center text-md font-medium"
             style={{
-              width: size,
-              height: size,
+              width: `${size}cqw`,
+              height: `${size}cqw`,
               background: dashed ? "white" : color,
               color: dashed ? color : "white",
             }}

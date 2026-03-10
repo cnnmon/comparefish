@@ -67,7 +67,7 @@ export function useChartPlacement({
       const el = containerRef.current;
       if (!p || !el) return null;
       const scale = el.getBoundingClientRect().width * 0.44;
-      const hitRadius = 22;
+      const hitRadius = el.getBoundingClientRect().width * 0.07;
       for (const other of allPlacements) {
         const dx = (p.x - other.x) * scale;
         const dy = (p.y - other.y) * scale;

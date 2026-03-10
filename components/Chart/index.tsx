@@ -70,6 +70,8 @@ export default function Chart() {
     cancelFix,
     deleteExistingFix,
     hoveredQuadrant,
+    showAllFixes,
+    toggleShowAllFixes,
   } = useChart();
   const myUserId = allPlacements.find((p) => p.isMe)?.userId;
 
@@ -110,6 +112,7 @@ export default function Chart() {
         ref={containerRef}
         className="relative w-full aspect-square touch-none select-none"
         style={{
+          containerType: "inline-size",
           cursor: locked
             ? "default"
             : fixTarget || editingSelf || !hasPlaced
@@ -184,7 +187,7 @@ export default function Chart() {
             <Avatar
               key={f._id}
               pos={pos}
-              size={80}
+              size={11}
               image={resolveImage({
                 name: f.targetName,
                 avatar: f.targetAvatar,
@@ -345,6 +348,14 @@ export default function Chart() {
               className="h-10 rounded-lg border border-zinc-200 px-5 text-sm font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
             >
               Exit self-placement
+            </button>
+          )}
+          {!fixTarget && !editingSelf && fixes.length > 0 && (
+            <button
+              onClick={toggleShowAllFixes}
+              className="text-xs opacity-40 hover:opacity-100 transition-opacity"
+            >
+              {showAllFixes ? "Show only my fixes" : "See all fixes"}
             </button>
           )}
         </div>

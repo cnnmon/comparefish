@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useCallback,
+  useState,
   ReactNode,
 } from "react";
 import { useMutation, useQuery } from "convex/react";
@@ -51,6 +52,8 @@ type ChartContextValue = {
   onPlace: (x: number, y: number) => void;
   onFix: (targetUserId: Id<"users">, x: number, y: number) => void;
   onDeleteFix: (fixId: Id<"fixes">) => void;
+  showAllFixes: boolean;
+  toggleShowAllFixes: () => void;
 } & ChartPlacementState;
 
 const ChartContext = createContext<ChartContextValue | null>(null);
@@ -73,7 +76,9 @@ export function ChartProvider({
   const countdown = formatTimeLeft(comparison?.expiresAt ?? undefined);
   const mine = useQuery(api.placements.getMine, { comparisonId });
   const allPlacements = useQuery(api.placements.getAll, { comparisonId });
-  const fixes = useQuery(api.fixes.getAll, { comparisonId });
+  const [showAllFixes, setShowAllFixes] = useState(false);
+  const toggleShowAllFixes = useCallback(() => setShowAllFixes((v) => !v), []);
+  const fixes = useQuery(api.fixes.getAll, { comparisonId, showAll: showAllFixes });
   const user = useQuery(api.users.currentUser);
 
   const submitPlacement = useMutation(api.placements.submit);
@@ -125,6 +130,8 @@ export function ChartProvider({
     onPlace,
     onFix,
     onDeleteFix,
+    showAllFixes,
+    toggleShowAllFixes,
     ...placement,
   };
 

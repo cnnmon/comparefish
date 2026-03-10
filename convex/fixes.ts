@@ -52,8 +52,11 @@ export const remove = mutation({
 });
 
 export const getAll = query({
-  args: { comparisonId: v.optional(v.id("comparisons")) },
-  handler: async (ctx, { comparisonId }) => {
+  args: {
+    comparisonId: v.optional(v.id("comparisons")),
+    showAll: v.optional(v.boolean()),
+  },
+  handler: async (ctx, { comparisonId, showAll }) => {
     if (!comparisonId) return [];
     const userId = await auth.getUserId(ctx);
     if (!userId) return [];
@@ -67,7 +70,7 @@ export const getAll = query({
       .withIndex("by_comparison", (q) => q.eq("comparisonId", comparisonId))
       .collect();
 
-    const relevant = isLocked
+    const relevant = isLocked || showAll
       ? all
       : all.filter(
           (f) => f.targetUserId === userId || f.fixerId === userId,
