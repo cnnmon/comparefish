@@ -8,20 +8,7 @@ import { api } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
 import { formatTimeLeft } from "@/components/Chart/ChartProvider";
 import { twMerge } from "tailwind-merge";
-import { getUserName } from "@/components/utils";
-
-function formatLabel(p: {
-  name?: string;
-  xLabelLeft?: string;
-  xLabelRight?: string;
-  yLabelTop?: string;
-  yLabelBottom?: string;
-}) {
-  if (p.name) return p.name;
-  const x = [p.xLabelLeft, p.xLabelRight].filter(Boolean).join(" ↔ ");
-  const y = [p.yLabelTop, p.yLabelBottom].filter(Boolean).join(" ↕ ");
-  return `${y} × ${x}`;
-}
+import { getUserName, formatLabel } from "@/components/utils";
 
 const defaultSettings = {
   name: "",
@@ -178,7 +165,10 @@ export function ComparisonPicker({
                     )}
                     {formatLabel(c)}
                     <span className="opacity-50">
-                      {c.creatorName ?? c.creatorId}
+                      {getUserName({
+                        id: c.creatorId ?? "unknown",
+                        name: c.creatorName,
+                      })}
                     </span>
                   </span>
                   <span className="ml-2 flex items-center gap-2">
@@ -265,7 +255,9 @@ export function ComparisonPicker({
                     className="h-8 rounded-lg border border-zinc-200 bg-transparent px-2 dark:border-zinc-700"
                   >
                     <option value="public">Public (shown in dropdown)</option>
-                    <option value="private">Private (share via link only)</option>
+                    <option value="private">
+                      Private (share via link only)
+                    </option>
                   </select>
                 </div>
                 <div className="flex items-center gap-2">

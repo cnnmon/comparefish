@@ -2,15 +2,24 @@
 
 import { use, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
 import Chart, { ChartProvider } from "@/components/Chart";
-import { ComparisonPicker } from "../../ComparisonPicker";
 import Shell from "@/components/Shell";
+import { formatLabel } from "@/components/utils";
 
 function ComparisonPage({ comparisonId }: { comparisonId: Id<"comparisons"> }) {
+  const comparison = useQuery(api.comparisons.get, { id: comparisonId });
+
+  useEffect(() => {
+    if (comparison) {
+      document.title = `Comparison: ${formatLabel(comparison)}`;
+    }
+    return () => { document.title = "comparisons"; };
+  }, [comparison]);
+
   return (
     <ChartProvider comparisonId={comparisonId}>
       <Shell comparisonId={comparisonId}>
