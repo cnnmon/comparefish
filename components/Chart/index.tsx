@@ -76,7 +76,7 @@ export default function Chart() {
     hoveredUserId && !fixTarget && !editingSelf
       ? hoveredUserId === myUserId
         ? "Re-place yourself"
-        : `Fix ${allPlacements.find((p) => p.userId === hoveredUserId)?.name?.split(" ")[0]}'s placement`
+        : `Fix ${allPlacements.find((p) => p.userId === hoveredUserId)?.name}'s placement`
       : null;
 
   // Users connected to the hovered fish via fixes
@@ -185,9 +185,7 @@ export default function Chart() {
                 avatar: f.targetAvatar,
               })}
               name={f.targetName}
-              label={
-                f.isMine ? "Your fix" : `${f.fixerName.split(" ")[0]}'s fix`
-              }
+              label={f.isMine ? "Your fix" : `${f.fixerName}'s fix`}
               status={
                 f.targetUserId === activeFixTargetId
                   ? "fixing"

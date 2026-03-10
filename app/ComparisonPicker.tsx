@@ -95,7 +95,8 @@ export function ComparisonPicker({
           {selected ? (
             <>
               <u>
-                {formatLabel(selected)} by {selected.creatorName.split(" ")[0]}
+                {formatLabel(selected)}
+                {selected.creatorName && `by ${selected.creatorName}`}
               </u>
             </>
           ) : (

@@ -59,7 +59,7 @@ export default function Shell({
             comparison
           </h1>
           <div className="flex items-center gap-3">
-            <p className="text-sm">{user?.name?.split(" ")[0]}</p>
+            <p className="text-sm">{user?.name}</p>
             <Image
               src={
                 resolveImage({
