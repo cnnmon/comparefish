@@ -52,7 +52,7 @@ export default function ExplorePage() {
       <CreatePlotModal open={creating} onClose={() => setCreating(false)} />
       <FeatheredScroll
         direction="vertical"
-        className="flex-col! w-full gap-6 overflow-y-auto max-h-[80vh] py-8"
+        className="flex-col! w-full gap-6 overflow-y-auto py-8"
       >
         <div>
           <div className="flex items-center justify-between mb-2">
