@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useConvexAuth, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { motion } from "framer-motion";
 
@@ -10,6 +10,7 @@ export default function Home() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const router = useRouter();
   const comparisons = useQuery(api.comparisons.list);
+  const createComparison = useMutation(api.comparisons.create);
 
   useEffect(() => {
     if (isLoading) return;
@@ -31,6 +32,17 @@ export default function Home() {
     );
   }
 
+  const handleCreate = async () => {
+    const id = await createComparison({
+      durationHours: 24,
+      xLabelLeft: "left",
+      xLabelRight: "right",
+      yLabelTop: "top",
+      yLabelBottom: "bottom",
+    });
+    router.push(`/compare/${id}`);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -38,7 +50,7 @@ export default function Home() {
       transition={{ duration: 0.3, delay: 0.2 }}
       className="flex min-h-screen items-center justify-center"
     >
-      <button onClick={() => router.push("/compare")}>
+      <button onClick={handleCreate}>
         Create a comparison!
       </button>
     </motion.div>
