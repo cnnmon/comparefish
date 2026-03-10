@@ -11,7 +11,12 @@ export const get = query({
     const comparison = await ctx.db.get(normalized);
     if (!comparison) return null;
     const locked = comparison.expiresAt ? Date.now() >= comparison.expiresAt : false;
-    return { ...comparison, isMine: comparison.creatorId === userId, locked };
+    const creator = comparison.creatorId ? await ctx.db.get(comparison.creatorId) : null;
+    const creatorName =
+      (creator && "name" in creator && typeof creator.name === "string"
+        ? creator.name
+        : null) ?? "Unknown";
+    return { ...comparison, isMine: comparison.creatorId === userId, locked, creatorName };
   },
 });
 

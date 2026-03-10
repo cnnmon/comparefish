@@ -7,7 +7,7 @@ import { api } from "../../convex/_generated/api";
 import { AvatarPicker } from "./AvatarPicker";
 import Image from "next/image";
 import { resolveAvatar, resolveImage } from "../Chart/utils";
-import { ComparisonPicker } from "@/app/ComparisonPicker";
+import { formatLabel } from "../utils";
 import { Id } from "@/convex/_generated/dataModel";
 import { Modal } from "../Modal";
 import { useMutation } from "convex/react";
@@ -37,7 +37,12 @@ export default function Shell({
   const [nameDraft, setNameDraft] = useState("");
   const [copied, setCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
-  const { locked, countdown, fixTarget, editingSelf, myPlacement } = useChart();
+  const chart = useChart();
+  const locked = chart?.locked ?? false;
+  const countdown = chart?.countdown ?? null;
+  const fixTarget = chart?.fixTarget ?? null;
+  const editingSelf = chart?.editingSelf ?? false;
+  const myPlacement = chart?.myPlacement ?? null;
 
   useEffect(() => {
     if (shareOpen) setShareUrl(window.location.href);
@@ -55,9 +60,9 @@ export default function Shell({
         <div className="flex w-full items-center justify-between">
           <h1
             className="text-3xl font-semibold tracking-tight cursor-pointer"
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/explore")}
           >
-            comparison
+            comparefish
           </h1>
           <div className="flex items-center gap-3">
             <p className="text-sm">
@@ -94,64 +99,67 @@ export default function Shell({
             </p>
           </div>
         </div>
-        <div className="flex w-full items-center gap-2">
-          <div className="flex flex-col w-full">
-            <ComparisonPicker selectedId={comparisonId} />
-            <p>
-              <a
-                className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
-                onClick={() => setSettingsOpen(true)}
-              >
-                Edit plot
-              </a>{" "}
-              / {comparison?.private ? "Private" : "Public"}
-              {countdown && (
-                <>
-                  {" "}
-                  /{" "}
-                  <span className="text-[var(--highlight)] font-bold">
-                    {countdown}
-                  </span>
-                </>
-              )}
-            </p>
+        {comparisonId && (
+          <div className="flex w-full items-center gap-2">
+            <div className="flex flex-col w-full">
+              <p className="text-[var(--highlight)]">
+                {comparison ? `${formatLabel(comparison)} by ${getUserName({ id: comparison.creatorId ?? "", name: comparison.creatorName })}` : "Loading..."}
+              </p>
+              <p>
+                <a
+                  className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
+                  onClick={() => setSettingsOpen(true)}
+                >
+                  Edit plot
+                </a>{" "}
+                / {comparison?.private ? "Private" : "Public"}
+                {countdown && (
+                  <>
+                    {" "}
+                    /{" "}
+                    <span className="text-[var(--highlight)] font-bold">
+                      {countdown}
+                    </span>
+                  </>
+                )}
+              </p>
 
-            <div className="italic text-white">
-              {/* Top indicator */}
-              {locked ? (
-                <p>
-                  <span>This plot is locked.</span>
-                </p>
-              ) : fixTarget ? (
-                <p className="text-[var(--highlight)]!">
-                  <span>
-                    Fixing <strong>{fixTarget.name}</strong>
-                  </span>
-                  <span> — click to place where you think they should be.</span>
-                </p>
-              ) : editingSelf ? (
-                <p>Click to place yourself.</p>
-              ) : (
-                <p>
-                  {myPlacement ? (
-                    <>
-                      Click on fish to fix their placements.{" "}
-                      <a
-                        className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
-                        onClick={() => setShareOpen(true)}
-                      >
-                        Share
-                      </a>{" "}
-                      to collect more fish.
-                    </>
-                  ) : (
-                    "Click to place yourself."
-                  )}
-                </p>
-              )}
+              <div className="italic text-white">
+                {locked ? (
+                  <p>
+                    <span>This plot is locked.</span>
+                  </p>
+                ) : fixTarget ? (
+                  <p className="text-[var(--highlight)]!">
+                    <span>
+                      Fixing <strong>{fixTarget.name}</strong>
+                    </span>
+                    <span> — click to place where you think they should be.</span>
+                  </p>
+                ) : editingSelf ? (
+                  <p>Click to place yourself.</p>
+                ) : (
+                  <p>
+                    {myPlacement ? (
+                      <>
+                        Click on fish to fix their placements.{" "}
+                        <a
+                          className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
+                          onClick={() => setShareOpen(true)}
+                        >
+                          Share
+                        </a>{" "}
+                        to collect more fish.
+                      </>
+                    ) : (
+                      "Click to place yourself."
+                    )}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       <motion.div

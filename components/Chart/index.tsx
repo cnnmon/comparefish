@@ -47,6 +47,8 @@ function CursorLabel({
 }
 
 export default function Chart() {
+  const ctx = useChart();
+  if (!ctx) throw new Error("Chart must be used within a ChartProvider");
   const {
     labels,
     locked,
@@ -72,7 +74,7 @@ export default function Chart() {
     hoveredQuadrant,
     showAllFixes,
     toggleShowAllFixes,
-  } = useChart();
+  } = ctx;
   const myUserId = allPlacements.find((p) => p.isMe)?.userId;
 
   const hoverLabel =

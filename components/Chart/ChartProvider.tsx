@@ -59,9 +59,7 @@ type ChartContextValue = {
 const ChartContext = createContext<ChartContextValue | null>(null);
 
 export function useChart() {
-  const ctx = useContext(ChartContext);
-  if (!ctx) throw new Error("useChart must be used within a ChartProvider");
-  return ctx;
+  return useContext(ChartContext);
 }
 
 export function ChartProvider({
