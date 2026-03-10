@@ -103,16 +103,39 @@ export default function Shell({
           <div className="flex w-full items-center gap-2">
             <div className="flex flex-col w-full">
               <p className="text-[var(--highlight)]">
-                {comparison ? `${formatLabel(comparison)} by ${getUserName({ id: comparison.creatorId ?? "", name: comparison.creatorName })}` : "Loading..."}
-              </p>
-              <p>
-                <a
-                  className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
-                  onClick={() => setSettingsOpen(true)}
-                >
-                  Edit plot
-                </a>{" "}
-                / {comparison?.private ? "Private" : "Public"}
+                {comparison
+                  ? `${formatLabel(comparison)} by ${getUserName({ id: comparison.creatorId ?? "", name: comparison.creatorName })}`
+                  : "Loading..."}
+                {isMine && (
+                  <>
+                    {" / "}
+                    <a
+                      className="underline cursor-pointer hover:bg-[var(--highlight)] hover:text-black py-1"
+                      onClick={() => setSettingsOpen(true)}
+                    >
+                      Edit plot
+                      {comparison?.private && (
+                        <svg
+                          className="inline-block h-3 w-3 ml-1 mb-0.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <rect
+                            x="3"
+                            y="11"
+                            width="18"
+                            height="11"
+                            rx="2"
+                            ry="2"
+                          />
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                      )}
+                    </a>
+                  </>
+                )}{" "}
                 {countdown && (
                   <>
                     {" "}
@@ -134,7 +157,10 @@ export default function Shell({
                     <span>
                       Fixing <strong>{fixTarget.name}</strong>
                     </span>
-                    <span> — click to place where you think they should be.</span>
+                    <span>
+                      {" "}
+                      — click to place where you think they should be.
+                    </span>
                   </p>
                 ) : editingSelf ? (
                   <p>Click to place yourself.</p>
@@ -157,6 +183,14 @@ export default function Shell({
                   </p>
                 )}
               </div>
+              <p>
+                <a
+                  className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
+                  onClick={() => router.push("/explore")}
+                >
+                  More plots
+                </a>
+              </p>
             </div>
           </div>
         )}
