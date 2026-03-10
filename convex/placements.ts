@@ -1,6 +1,21 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { auth } from "./auth";
+import { Id } from "./_generated/dataModel";
+import { QueryCtx } from "./_generated/server";
+
+async function getUserDisplay(ctx: QueryCtx, userId: Id<"users">) {
+  const user = await ctx.db.get(userId);
+  const profile = await ctx.db
+    .query("userProfiles")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .unique();
+  return {
+    name: user?.name ?? "Anonymous",
+    image: user?.image ?? null,
+    avatar: profile?.avatar ?? null,
+  };
+}
 
 export const submit = mutation({
   args: {
@@ -61,7 +76,7 @@ export const getResults = query({
 
     const results = await Promise.all(
       placements.map(async (p) => {
-        const user = await ctx.db.get(p.userId);
+        const display = await getUserDisplay(ctx, p.userId);
         const userFixes = fixes.filter((f) => f.targetUserId === p.userId);
         const avg =
           userFixes.length > 0
@@ -72,8 +87,7 @@ export const getResults = query({
             : null;
         return {
           userId: p.userId,
-          name: user?.name ?? "Anonymous",
-          image: user?.image ?? null,
+          ...display,
           self: { x: p.x, y: p.y },
           averaged: avg,
           fixCount: userFixes.length,
@@ -98,13 +112,8 @@ export const getAll = query({
 
     const withUsers = await Promise.all(
       all.map(async (p) => {
-        const user = await ctx.db.get(p.userId);
-        return {
-          ...p,
-          name: user?.name ?? "Anonymous",
-          image: user?.image ?? null,
-          isMe: p.userId === userId,
-        };
+        const display = await getUserDisplay(ctx, p.userId);
+        return { ...p, ...display, isMe: p.userId === userId };
       }),
     );
     return withUsers;

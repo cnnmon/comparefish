@@ -4,49 +4,43 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
-import { ComparisonPicker } from "./ComparisonPicker";
-import { Shell, SignIn } from "./Shell";
+import { motion } from "framer-motion";
 
-function Main() {
+export default function Home() {
+  const { isAuthenticated, isLoading } = useConvexAuth();
   const router = useRouter();
   const comparisons = useQuery(api.comparisons.list);
 
   useEffect(() => {
-    if (comparisons && comparisons.length > 0) {
-      router.replace(`/c/${comparisons[0]._id}`);
+    if (isLoading) return;
+    if (!isAuthenticated) {
+      router.replace("/login");
+      return;
     }
-  }, [comparisons, router]);
 
-  if (comparisons === undefined) {
+    if (comparisons && comparisons.length > 0) {
+      router.replace(`/compare/${comparisons[0]._id}`);
+    }
+  }, [isLoading, isAuthenticated, comparisons, router]);
+
+  if (isLoading || !isAuthenticated || comparisons === undefined) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-zinc-400">Loading...</p>
+        <p>Loading...</p>
       </div>
     );
   }
-
-  if (comparisons.length > 0) return null;
 
   return (
-    <Shell>
-      <ComparisonPicker selectedId={null} />
-      <p className="py-16 text-sm text-zinc-400">
-        No comparisons yet. Create one above!
-      </p>
-    </Shell>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, delay: 0.2 }}
+      className="flex min-h-screen items-center justify-center"
+    >
+      <button onClick={() => router.push("/compare")}>
+        Create a comparison!
+      </button>
+    </motion.div>
   );
-}
-
-export default function Home() {
-  const { isAuthenticated, isLoading } = useConvexAuth();
-
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-zinc-400">Loading...</p>
-      </div>
-    );
-  }
-
-  return isAuthenticated ? <Main /> : <SignIn />;
 }

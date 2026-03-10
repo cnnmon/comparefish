@@ -29,7 +29,12 @@ export const list = query({
           .query("placements")
           .withIndex("by_comparison", (q) => q.eq("comparisonId", c._id))
           .collect();
-        return { ...c, placementCount: placements.length };
+        const creator = c.creatorId ? await ctx.db.get(c.creatorId) : null;
+        const creatorName =
+          (creator && "name" in creator && typeof creator.name === "string"
+            ? creator.name
+            : null) ?? "Unknown";
+        return { ...c, placementCount: placements.length, creatorName };
       }),
     );
     return withCounts;

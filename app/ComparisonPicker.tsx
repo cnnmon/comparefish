@@ -3,19 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { api } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
-
-function formatTimeLeft(expiresAt: number | undefined) {
-  if (!expiresAt) return null;
-  const diff = expiresAt - Date.now();
-  if (diff <= 0) return "Locked";
-  const hours = Math.floor(diff / 3600000);
-  const mins = Math.floor((diff % 3600000) / 60000);
-  if (hours >= 24) return `${Math.floor(hours / 24)}d left`;
-  if (hours > 0) return `${hours}h left`;
-  return `${mins}m left`;
-}
+import { formatTimeLeft } from "@/components/Chart/ChartProvider";
+import { twMerge } from "tailwind-merge";
 
 function formatLabel(p: {
   name?: string;
@@ -30,6 +22,16 @@ function formatLabel(p: {
   return `${y} × ${x}`;
 }
 
+const defaultSettings = {
+  name: "",
+  isPrivate: false,
+  durationHours: 24,
+  xLeft: "",
+  xRight: "",
+  yTop: "",
+  yBottom: "",
+};
+
 export function ComparisonPicker({
   selectedId,
 }: {
@@ -40,13 +42,11 @@ export function ComparisonPicker({
   const createComparison = useMutation(api.comparisons.create);
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [name, setName] = useState("");
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [durationHours, setDurationHours] = useState(24);
-  const [xLeft, setXLeft] = useState("");
-  const [xRight, setXRight] = useState("");
-  const [yTop, setYTop] = useState("");
-  const [yBottom, setYBottom] = useState("");
+  const [settings, setSettings] = useState(defaultSettings);
+  const set = <K extends keyof typeof defaultSettings>(
+    k: K,
+    v: (typeof defaultSettings)[K],
+  ) => setSettings((s) => ({ ...s, [k]: v }));
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -61,186 +61,269 @@ export function ComparisonPicker({
   }, []);
 
   const selected = comparisons?.find((c) => c._id === selectedId);
-  const hasX = xLeft.trim() || xRight.trim();
-  const hasY = yTop.trim() || yBottom.trim();
+  const hasX = settings.xLeft.trim() || settings.xRight.trim();
+  const hasY = settings.yTop.trim() || settings.yBottom.trim();
   const canCreate = hasX && hasY;
 
   const handleCreate = async () => {
     if (!canCreate) return;
     const id = await createComparison({
-      name: name.trim() || undefined,
-      private: isPrivate || undefined,
-      durationHours,
-      xLabelLeft: xLeft.trim() || undefined,
-      xLabelRight: xRight.trim() || undefined,
-      yLabelTop: yTop.trim() || undefined,
-      yLabelBottom: yBottom.trim() || undefined,
+      name: settings.name.trim() || undefined,
+      private: settings.isPrivate || undefined,
+      durationHours: settings.durationHours,
+      xLabelLeft: settings.xLeft.trim() || undefined,
+      xLabelRight: settings.xRight.trim() || undefined,
+      yLabelTop: settings.yTop.trim() || undefined,
+      yLabelBottom: settings.yBottom.trim() || undefined,
     });
-    router.push(`/c/${id}`);
-    setName("");
-    setIsPrivate(false);
-    setDurationHours(24);
-    setXLeft("");
-    setXRight("");
-    setYTop("");
-    setYBottom("");
+    router.push(`/compare/${id}`);
+    setSettings(defaultSettings);
     setCreating(false);
     setOpen(false);
   };
 
   return (
-    <div ref={ref} className="relative w-full">
-      <button
+    <div ref={ref} className="relative w-full flex gap-1">
+      <p>Current plot:</p>
+      <p
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between rounded-lg border border-zinc-200 px-4 py-2.5 text-left text-sm font-medium transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+        className={twMerge(
+          "flex gap-2 text-left cursor-pointer select-none text-[var(--highlight)] hover:bg-[var(--highlight)] hover:text-black truncate",
+        )}
       >
-        <span className="truncate">
-          {selected ? formatLabel(selected) : "Select a comparison"}
-        </span>
-        <div className="flex items-center gap-2">
-          {selected && (
-            <span className="text-xs tabular-nums text-zinc-400">
-              {selected.placementCount}
-            </span>
+        <span className="truncate flex flex-1">
+          {selected ? (
+            <>
+              <u>
+                {formatLabel(selected)} by{" "}
+                {selected.creatorName ?? selected.creatorId}
+              </u>
+            </>
+          ) : (
+            "Select a comparison"
           )}
+        </span>
+        <span className="flex items-center gap-2">
           <svg
-            className={`h-4 w-4 text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`}
+            className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
             strokeWidth={2}
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
-        </div>
-      </button>
-
-      {open && (
-        <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-          <div className="max-h-64 overflow-y-auto">
-            {comparisons?.map((c) => (
-              <button
-                key={c._id}
+        </span>
+      </p>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            className="absolute bg-[var(--background)] border border-[1.5px] shadow-lg border-[var(--foreground)]! select-none left-0 right-0 top-full z-[2] mt-1 overflow-hidden rounded-lg max-w-md"
+          >
+            <div className="max-h-64 overflow-y-auto">
+              <p
                 onClick={() => {
-                  router.push(`/c/${c._id}`);
+                  setCreating(true);
                   setOpen(false);
-                  setCreating(false);
                 }}
-                className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800 ${
-                  c._id === selectedId
-                    ? "bg-zinc-50 font-medium dark:bg-zinc-800"
-                    : ""
-                }`}
+                className="flex w-full items-center gap-2 px-4 py-3 text-left border-b-[var(--foreground)] border-b-1 hover:bg-[var(--foreground)] hover:text-black cursor-pointer"
               >
-                <span className="flex items-center gap-1.5 truncate">
-                  {c.private && (
-                    <svg className="h-3 w-3 shrink-0 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  )}
-                  {formatLabel(c)}
-                </span>
-                <span className="ml-2 flex items-center gap-2 text-xs tabular-nums text-zinc-400">
-                  {c.expiresAt && (
-                    <span className={c.expiresAt <= Date.now() ? "text-zinc-500 font-medium" : "text-amber-500"}>
-                      {formatTimeLeft(c.expiresAt)}
+                + New plot
+              </p>
+              {comparisons?.map((c) => (
+                <p
+                  key={c._id}
+                  onClick={() => {
+                    router.push(`/compare/${c._id}`);
+                    setOpen(false);
+                    setCreating(false);
+                  }}
+                  className={`flex w-full items-center justify-between px-4 py-3 text-left cursor-pointer hover:bg-[var(--foreground)] hover:text-black ${
+                    c._id === selectedId
+                      ? "opacity-50 bg-[#101912] pointer-events-none"
+                      : ""
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    {c.private && (
+                      <svg
+                        className="h-3 w-3 shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <rect
+                          x="3"
+                          y="11"
+                          width="18"
+                          height="11"
+                          rx="2"
+                          ry="2"
+                        />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                    )}
+                    {formatLabel(c)}
+                    <span className="opacity-50">
+                      {c.creatorName ?? c.creatorId}
+                    </span>
+                  </span>
+                  <span className="ml-2 flex items-center gap-2">
+                    {c.expiresAt && (
+                      <span
+                        className={
+                          c.expiresAt <= Date.now()
+                            ? "opacity-50"
+                            : "text-amber-500"
+                        }
+                      >
+                        {formatTimeLeft(c.expiresAt ?? undefined)}
+                      </span>
+                    )}
+                  </span>
+                </p>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {creating && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-[1] flex items-center justify-center bg-[var(--background)]/60"
+            onClick={() => setCreating(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="flex w-full max-w-2xl gap-5 rounded-xl border border-[var(--foreground)] bg-[var(--background)] p-5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex flex-1 flex-col gap-3">
+                <h2 className="font-semibold">New comparison</h2>
+                <input
+                  value={settings.name}
+                  onChange={(e) => set("name", e.target.value)}
+                  placeholder="Name (optional)"
+                  autoFocus
+                  className="h-9 rounded-lg border border-zinc-200 bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                />
+                <div className="flex gap-2">
+                  <input
+                    value={settings.xLeft}
+                    onChange={(e) => set("xLeft", e.target.value)}
+                    placeholder="← left"
+                    className="h-9 flex-1 rounded-lg border border-zinc-200 bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                  />
+                  <input
+                    value={settings.xRight}
+                    onChange={(e) => set("xRight", e.target.value)}
+                    placeholder="right →"
+                    className="h-9 flex-1 rounded-lg border border-zinc-200 bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    value={settings.yTop}
+                    onChange={(e) => set("yTop", e.target.value)}
+                    placeholder="↑ top"
+                    className="h-9 flex-1 rounded-lg border border-zinc-200 bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                  />
+                  <input
+                    value={settings.yBottom}
+                    onChange={(e) => set("yBottom", e.target.value)}
+                    placeholder="bottom ↓"
+                    className="h-9 flex-1 rounded-lg border border-zinc-200 bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                  />
+                </div>
+                <label className="flex items-center gap-2 text-zinc-500">
+                  <input
+                    type="checkbox"
+                    checked={settings.isPrivate}
+                    onChange={(e) => set("isPrivate", e.target.checked)}
+                    className="rounded"
+                  />
+                  Private (only visible to you)
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-zinc-500">Locks in</span>
+                  <select
+                    value={settings.durationHours}
+                    onChange={(e) =>
+                      set("durationHours", Number(e.target.value))
+                    }
+                    className="h-8 rounded-lg border border-zinc-200 bg-transparent px-2 dark:border-zinc-700"
+                  >
+                    <option value={1}>1 hour</option>
+                    <option value={6}>6 hours</option>
+                    <option value={12}>12 hours</option>
+                    <option value={24}>1 day</option>
+                    <option value={72}>3 days</option>
+                    <option value={168}>1 week</option>
+                  </select>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={() => void handleCreate()}
+                    disabled={!canCreate}
+                    className="h-9 flex-1 rounded-lg bg-zinc-900 font-medium text-white hover:bg-zinc-700 disabled:opacity-30 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                  >
+                    Create
+                  </button>
+                  <button
+                    onClick={() => setCreating(false)}
+                    className="h-9 rounded-lg border border-zinc-200 px-4 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+
+              <div className="hidden sm:flex w-52 shrink-0 items-center">
+                <div className="relative w-full aspect-square">
+                  <div className="absolute left-1/2 top-[6%] bottom-[6%] w-[1.5px] bg-[var(--foreground)]" />
+                  <div className="absolute top-1/2 left-[6%] right-[6%] h-[1.5px] bg-[var(--foreground)]" />
+                  {settings.yTop.trim() && (
+                    <span className="absolute top-[1%] left-1/2 -translate-x-1/2 text-center text-xs bg-[var(--background)] px-1 whitespace-nowrap">
+                      {settings.yTop.trim()}
                     </span>
                   )}
-                  {c.placementCount}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {!creating ? (
-            <button
-              onClick={() => setCreating(true)}
-              className="flex w-full items-center gap-2 border-t border-zinc-200 px-4 py-2.5 text-left text-sm font-medium transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-            >
-              <span className="text-zinc-400">+</span>
-              New comparison
-            </button>
-          ) : (
-            <div className="flex flex-col gap-2 border-t border-zinc-200 p-3 dark:border-zinc-700">
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Name (optional)"
-                autoFocus
-                className="h-8 rounded border border-zinc-200 bg-transparent px-2 text-xs placeholder:text-zinc-400 dark:border-zinc-700"
-              />
-              <div className="flex gap-2">
-                <input
-                  value={xLeft}
-                  onChange={(e) => setXLeft(e.target.value)}
-                  placeholder="← left"
-                  className="h-8 flex-1 rounded border border-zinc-200 bg-transparent px-2 text-xs placeholder:text-zinc-400 dark:border-zinc-700"
-                />
-                <input
-                  value={xRight}
-                  onChange={(e) => setXRight(e.target.value)}
-                  placeholder="right →"
-                  className="h-8 flex-1 rounded border border-zinc-200 bg-transparent px-2 text-xs placeholder:text-zinc-400 dark:border-zinc-700"
-                />
+                  {settings.yBottom.trim() && (
+                    <span className="absolute bottom-[1%] left-1/2 -translate-x-1/2 text-center text-xs bg-[var(--background)] px-1 whitespace-nowrap">
+                      {settings.yBottom.trim()}
+                    </span>
+                  )}
+                  {settings.xRight.trim() && (
+                    <span className="absolute right-[1%] top-1/2 -translate-y-1/2 text-right text-xs bg-[var(--background)] px-1 whitespace-nowrap">
+                      {settings.xRight.trim()}
+                    </span>
+                  )}
+                  {settings.xLeft.trim() && (
+                    <span className="absolute left-[1%] top-1/2 -translate-y-1/2 text-left text-xs bg-[var(--background)] px-1 whitespace-nowrap">
+                      {settings.xLeft.trim()}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="flex gap-2">
-                <input
-                  value={yTop}
-                  onChange={(e) => setYTop(e.target.value)}
-                  placeholder="↑ top"
-                  className="h-8 flex-1 rounded border border-zinc-200 bg-transparent px-2 text-xs placeholder:text-zinc-400 dark:border-zinc-700"
-                />
-                <input
-                  value={yBottom}
-                  onChange={(e) => setYBottom(e.target.value)}
-                  placeholder="bottom ↓"
-                  className="h-8 flex-1 rounded border border-zinc-200 bg-transparent px-2 text-xs placeholder:text-zinc-400 dark:border-zinc-700"
-                />
-              </div>
-              <label className="flex items-center gap-2 text-xs text-zinc-500">
-                <input
-                  type="checkbox"
-                  checked={isPrivate}
-                  onChange={(e) => setIsPrivate(e.target.checked)}
-                  className="rounded"
-                />
-                Private (only visible to you)
-              </label>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-zinc-500">Locks in</span>
-                <select
-                  value={durationHours}
-                  onChange={(e) => setDurationHours(Number(e.target.value))}
-                  className="h-7 rounded border border-zinc-200 bg-transparent px-1.5 text-xs dark:border-zinc-700"
-                >
-                  <option value={1}>1 hour</option>
-                  <option value={6}>6 hours</option>
-                  <option value={12}>12 hours</option>
-                  <option value={24}>1 day</option>
-                  <option value={72}>3 days</option>
-                  <option value={168}>1 week</option>
-                </select>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => void handleCreate()}
-                  disabled={!canCreate}
-                  className="h-8 flex-1 rounded bg-zinc-900 text-xs font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-30 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-                >
-                  Create
-                </button>
-                <button
-                  onClick={() => setCreating(false)}
-                  className="h-8 rounded border border-zinc-200 px-3 text-xs transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,0 +1,81 @@
+import { Id } from "@/convex/_generated/dataModel";
+
+export const AVATARS = Array.from(
+  { length: 37 },
+  (_, i) => `fish-${i + 1}`,
+) as readonly string[];
+
+export type AvatarKey = string;
+
+export function avatarUrl(key: string): string {
+  return `/assets/fish/${key}.png`;
+}
+
+export function resolveAvatar(
+  name: string | null | undefined,
+  avatar: string | null | undefined,
+): string {
+  if (avatar) return avatar;
+  const hash =
+    name?.split("").reduce((acc: number, char: string) => {
+      return acc + char.charCodeAt(0);
+    }, 0) ?? 0;
+  return `fish-${hash % AVATARS.length}`;
+}
+
+export function resolveImage({
+  name,
+  avatar,
+}: {
+  name: string | null | undefined;
+  avatar: string | null | undefined;
+}): string | null {
+  return avatarUrl(resolveAvatar(name, avatar));
+}
+
+export const COLORS = [
+  "#f87171",
+  "#fb923c",
+  "#fbbf24",
+  "#a3e635",
+  "#34d399",
+  "#22d3ee",
+  "#60a5fa",
+  "#a78bfa",
+  "#f472b6",
+  "#e879f9",
+];
+
+export function nameToColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++)
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return COLORS[Math.abs(hash) % COLORS.length];
+}
+
+export type Point = { x: number; y: number };
+
+export const toPos = (p: Point) => ({
+  left: 50 + p.x * 44,
+  top: 50 - p.y * 44,
+});
+
+export type PlacedPoint = Point & {
+  _id: string;
+  userId: Id<"users">;
+  name: string;
+  image: string | null;
+  avatar: string | null;
+  isMe: boolean;
+};
+
+export type Fix = Point & {
+  _id: Id<"fixes">;
+  fixerId: Id<"users">;
+  targetUserId: Id<"users">;
+  targetName: string;
+  targetImage: string | null;
+  targetAvatar: string | null;
+  fixerName: string;
+  isMine: boolean;
+};

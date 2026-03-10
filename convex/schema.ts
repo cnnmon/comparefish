@@ -5,6 +5,11 @@ import { v } from "convex/values";
 const schema = defineSchema({
   ...authTables,
 
+  userProfiles: defineTable({
+    userId: v.id("users"),
+    avatar: v.string(),
+  }).index("by_user", ["userId"]),
+
   comparisons: defineTable({
     date: v.string(),
     creatorId: v.optional(v.id("users")),

@@ -58,24 +58,35 @@ export const getAll = query({
     const userId = await auth.getUserId(ctx);
     if (!userId) return [];
 
+    const comparison = await ctx.db.get(comparisonId);
+    const isLocked =
+      comparison?.expiresAt ? Date.now() >= comparison.expiresAt : false;
+
     const all = await ctx.db
       .query("fixes")
       .withIndex("by_comparison", (q) => q.eq("comparisonId", comparisonId))
       .collect();
 
-    const relevant = all.filter(
-      (f) => f.targetUserId === userId || f.fixerId === userId,
-    );
+    const relevant = isLocked
+      ? all
+      : all.filter(
+          (f) => f.targetUserId === userId || f.fixerId === userId,
+        );
 
     const withDetails = await Promise.all(
       relevant.map(async (f) => {
         const fixer = await ctx.db.get(f.fixerId);
         const target = await ctx.db.get(f.targetUserId);
+        const targetProfile = await ctx.db
+          .query("userProfiles")
+          .withIndex("by_user", (q) => q.eq("userId", f.targetUserId))
+          .unique();
         return {
           ...f,
           fixerName: fixer?.name ?? "Anonymous",
           targetName: target?.name ?? "Anonymous",
           targetImage: target?.image ?? null,
+          targetAvatar: targetProfile?.avatar ?? null,
           isMine: f.fixerId === userId,
         };
       }),
