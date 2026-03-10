@@ -112,6 +112,7 @@ export function useChartPlacement({
           setEditingSelf(true);
         } else {
           setFixTarget(hit);
+          setHoveredUserId(hit.userId);
           const existing = fixes.find(
             (f) => f.isMine && f.targetUserId === hit.userId,
           );
@@ -148,8 +149,8 @@ export function useChartPlacement({
 
   const handlePointerLeave = useCallback(() => {
     setHoveredQuadrant(null);
-    if (!isFixing) setHoveredUserId(null);
-  }, [isFixing]);
+    if (!isFixing && !editingSelf) setHoveredUserId(null);
+  }, [isFixing, editingSelf]);
 
   const cancelFix = useCallback(() => {
     setFixTarget(null);

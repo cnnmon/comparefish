@@ -75,7 +75,7 @@ export default function Chart() {
   const hoverLabel =
     hoveredUserId && !fixTarget && !editingSelf
       ? hoveredUserId === myUserId
-        ? "Fix your placement"
+        ? "Re-place yourself"
         : `Fix ${allPlacements.find((p) => p.userId === hoveredUserId)?.name?.split(" ")[0]}'s placement`
       : null;
 
@@ -88,12 +88,6 @@ export default function Chart() {
       if (f.fixerId === hoveredUserId) connectedToHovered.add(f.targetUserId);
     }
   }
-
-  const fishOpacity = (userId: string) => {
-    if (activeFixTargetId) return userId === activeFixTargetId ? 1 : 0.2;
-    if (hoveredUserId) return connectedToHovered.has(userId) ? 1 : 0.3;
-    return 1;
-  };
 
   const fixAvatarOpacity = (targetUserId: string) => {
     if (activeFixTargetId)
@@ -191,9 +185,18 @@ export default function Chart() {
                 avatar: f.targetAvatar,
               })}
               name={f.targetName}
-              label={`${f.fixerName.split(" ")[0]}'s fix`}
-              labelColor="#DF0C0C"
-              opacity={fixAvatarOpacity(f.targetUserId)}
+              label={
+                f.isMine ? "Your fix" : `${f.fixerName.split(" ")[0]}'s fix`
+              }
+              status={
+                f.targetUserId === activeFixTargetId
+                  ? "fixing"
+                  : editingSelf && f.targetUserId === myUserId
+                    ? undefined
+                    : hoveredUserId === f.targetUserId
+                      ? "hovering"
+                      : "hidden"
+              }
             />
           );
         })}
@@ -202,7 +205,6 @@ export default function Chart() {
           .filter((p) => !p.isMe)
           .map((p) => {
             const pos = toPos(p);
-            const isHovered = hoveredUserId === p.userId;
             const isFixingThis = fixTarget?.userId === p.userId;
             return (
               <Avatar
@@ -214,8 +216,15 @@ export default function Chart() {
                 })}
                 name={p.name}
                 label={p.name}
-                labelColor={isFixingThis || isHovered ? "#887D7D" : "#E0E0E0"}
-                opacity={fishOpacity(p.userId)}
+                status={
+                  isFixingThis
+                    ? undefined
+                    : hoveredUserId === p.userId
+                      ? "hovering"
+                      : hoveredUserId
+                        ? "hidden"
+                        : undefined
+                }
               />
             );
           })}
@@ -263,8 +272,8 @@ export default function Chart() {
                     avatar: fixTarget.avatar,
                   })}
                   name={fixTarget.name}
-                  label="your fix"
-                  labelColor="#DF0C0C"
+                  label="Your fix"
+                  status={"fixing"}
                 />
               </>
             );
@@ -279,14 +288,14 @@ export default function Chart() {
             })}
             name={myName}
             label="me"
-            opacity={
-              activeFixTargetId
-                ? 0.2
-                : hoveredUserId && myUserId
-                  ? connectedToHovered.has(myUserId)
-                    ? 1
-                    : 0.3
-                  : 1
+            status={
+              fixTarget?.userId === myUserId
+                ? "fixing"
+                : hoveredUserId === myUserId
+                  ? "hovering"
+                  : hoveredUserId
+                    ? "hidden"
+                    : undefined
             }
           />
         )}

@@ -30,7 +30,7 @@ export function Modal({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="rounded-xl border border-[var(--foreground)] bg-[var(--background)] flex flex-col max-h-[70vh] w-full max-w-2xl mx-4"
+            className="rounded-xl border border-[var(--foreground)] bg-[var(--background)] flex flex-col max-h-[70vh] w-full max-w-xl mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             {title && (

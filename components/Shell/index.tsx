@@ -28,18 +28,22 @@ export default function Shell({
     comparisonId ? { id: comparisonId } : "skip",
   );
   const togglePrivate = useMutation(api.comparisons.togglePrivate);
+  const renameComparison = useMutation(api.comparisons.rename);
   const removeComparison = useMutation(api.comparisons.remove);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
   const [copied, setCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
-
   const { locked, countdown, fixTarget, editingSelf, myPlacement } = useChart();
 
   useEffect(() => {
     if (shareOpen) setShareUrl(window.location.href);
   }, [shareOpen]);
+  useEffect(() => {
+    if (settingsOpen) setNameDraft(comparison?.name ?? "");
+  }, [settingsOpen]);
   const isMine = comparison?.isMine ?? false;
 
   if (!user) return null;
@@ -90,17 +94,11 @@ export default function Shell({
             <p>
               <a
                 className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
-                onClick={() => setShareOpen(true)}
-              >
-                Share
-              </a>{" "}
-              /{" "}
-              <a
-                className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
                 onClick={() => setSettingsOpen(true)}
               >
                 Edit plot
-              </a>
+              </a>{" "}
+              / {comparison?.private ? "Private" : "Public"}
               {countdown && (
                 <>
                   {" "}
@@ -115,24 +113,35 @@ export default function Shell({
             <div className="italic text-white">
               {/* Top indicator */}
               {locked ? (
-                <div>
+                <p>
                   <span>This plot is locked.</span>
-                </div>
+                </p>
               ) : fixTarget ? (
-                <div>
+                <p className="text-[var(--highlight)]!">
                   <span>
                     Fixing <strong>{fixTarget.name}</strong>
                   </span>
-                  <span> — click to place where they should be.</span>
-                </div>
+                  <span> — click to place where you think they should be.</span>
+                </p>
               ) : editingSelf ? (
-                <div>Click to place yourself.</div>
+                <p>Click to place yourself.</p>
               ) : (
-                <div>
-                  {myPlacement
-                    ? "Click on fish to fix their placements. Share to get more fish."
-                    : "Click to place yourself."}
-                </div>
+                <p>
+                  {myPlacement ? (
+                    <>
+                      Click on fish to fix their placements.{" "}
+                      <a
+                        className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
+                        onClick={() => setShareOpen(true)}
+                      >
+                        Share
+                      </a>{" "}
+                      to collect more fish.
+                    </>
+                  ) : (
+                    "Click to place yourself."
+                  )}
+                </p>
               )}
             </div>
           </div>
@@ -143,7 +152,7 @@ export default function Shell({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="flex w-full max-w-xl flex-col items-center gap-6 px-6 py-8 mt-10"
+        className="flex w-full max-w-2xl flex-col items-center gap-6 px-6 py-8 mt-10"
       >
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -157,6 +166,10 @@ export default function Shell({
             title="Share link"
           >
             <div className="flex flex-col gap-3">
+              <p>
+                Invite friends to place themselves on this plot. Once they do,
+                you can fix their placements!
+              </p>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -184,6 +197,25 @@ export default function Shell({
               title="Edit plot"
             >
               <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between gap-4">
+                  <span>Name</span>
+                  <input
+                    type="text"
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    onBlur={() =>
+                      void renameComparison({
+                        id: comparisonId,
+                        name: nameDraft,
+                      })
+                    }
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
+                    placeholder="Untitled plot"
+                    className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-[var(--foreground)]"
+                  />
+                </div>
                 <div className="flex items-center justify-between gap-4">
                   <span>Visibility</span>
                   <button

@@ -65,6 +65,18 @@ export const create = mutation({
   },
 });
 
+export const rename = mutation({
+  args: { id: v.id("comparisons"), name: v.string() },
+  handler: async (ctx, { id, name }) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const comparison = await ctx.db.get(id);
+    if (!comparison) throw new Error("Not found");
+    if (comparison.creatorId !== userId) throw new Error("Not authorized");
+    await ctx.db.patch(id, { name: name.trim() || undefined });
+  },
+});
+
 export const togglePrivate = mutation({
   args: { id: v.id("comparisons") },
   handler: async (ctx, { id }) => {

@@ -10,9 +10,8 @@ export function Avatar({
   image,
   name,
   label,
-  labelColor,
   dashed,
-  opacity = 1,
+  status,
   cursor,
 }: {
   pos: {
@@ -23,9 +22,8 @@ export function Avatar({
   image: string | null;
   name: string;
   label?: string;
-  labelColor?: string;
   dashed?: boolean;
-  opacity?: number;
+  status?: "fixing" | "hovering" | "hidden" | undefined;
   cursor?: string;
 }) {
   const [imgFailed, setImgFailed] = useState(false);
@@ -34,6 +32,27 @@ export function Avatar({
   const showImage = image && !imgFailed;
   const color = nameToColor(name);
   const { left, top } = pos;
+
+  const { opacity, labelColor } = (() => {
+    if (status === "fixing") {
+      return {
+        opacity: 1,
+        labelColor: "red",
+      };
+    } else if (status === "hovering") {
+      return {
+        opacity: 1,
+        labelColor: "orange",
+      };
+    } else if (status === "hidden") {
+      return {
+        opacity: 0.5,
+        labelColor: "green",
+      };
+    }
+
+    return { opacity: 1, labelColor: "white" };
+  })();
 
   return (
     <div
