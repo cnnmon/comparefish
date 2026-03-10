@@ -94,7 +94,7 @@ export default function Shell({
                 onClick={() => void signOut()}
                 className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
               >
-                Sign out
+                X
               </a>
             </p>
           </div>
