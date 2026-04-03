@@ -13,7 +13,7 @@ export const get = query({
     const locked = comparison.expiresAt ? Date.now() >= comparison.expiresAt : false;
     const creator = comparison.creatorId ? await ctx.db.get(comparison.creatorId) : null;
     const creatorName =
-      (creator && "name" in creator && typeof creator.name === "string"
+      (creator && "name" in creator && typeof creator.name === "string" && creator.name
         ? creator.name
         : null) ?? "Unknown";
     return { ...comparison, isMine: comparison.creatorId === userId, locked, creatorName };
@@ -36,7 +36,7 @@ export const list = query({
           .collect();
         const creator = c.creatorId ? await ctx.db.get(c.creatorId) : null;
         const creatorName =
-          (creator && "name" in creator && typeof creator.name === "string"
+          (creator && "name" in creator && typeof creator.name === "string" && creator.name
             ? creator.name
             : null) ?? "Unknown";
         return { ...c, placementCount: placements.length, creatorName };
