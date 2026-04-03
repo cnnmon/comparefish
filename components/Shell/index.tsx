@@ -73,42 +73,44 @@ export default function Shell({
             <h2 className="text-3xl!">by {getUserName({ id: comparison.creatorId ?? "", name: comparison.creatorName })}</h2>
           </div>)}
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 justify-between">
             {isAuthenticated && user ? (
-              <>
+              <div className="flex gap-4 items-center">
                 <p className="text-sm">
                   {getUserName({
                     id: user._id ?? "unknown",
                     name: user.name ?? "",
                   })}
                 </p>
-                <Image
-                  src={
-                    resolveImage({
-                      name: user.name ?? "",
-                      avatar: user.avatar,
-                    }) ?? ""
-                  }
-                  alt={user.name || ""}
-                  width={32}
-                  height={32}
-                  className="rounded-full object-cover transition-opacity hover:opacity-80 cursor-pointer scale-180"
-                  onClick={() => setPickerOpen(!pickerOpen)}
-                />
-                <AvatarPicker
-                  open={pickerOpen}
-                  onClose={() => setPickerOpen(false)}
-                  current={resolveAvatar(user.name, user.avatar)}
-                />
-                <p>
-                  <a
-                    onClick={() => void signOut()}
-                    className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
-                  >
-                    logout
-                  </a>
-                </p>
-              </>
+                <div className="flex gap-4 items-center">
+                  <Image
+                    src={
+                      resolveImage({
+                        name: user.name ?? "",
+                        avatar: user.avatar,
+                      }) ?? ""
+                    }
+                    alt={user.name || ""}
+                    width={32}
+                    height={32}
+                    className="rounded-full object-cover transition-opacity hover:opacity-80 cursor-pointer scale-180"
+                    onClick={() => setPickerOpen(!pickerOpen)}
+                  />
+                  <AvatarPicker
+                    open={pickerOpen}
+                    onClose={() => setPickerOpen(false)}
+                    current={resolveAvatar(user.name, user.avatar)}
+                  />
+                  <p>
+                    <a
+                      onClick={() => void signOut()}
+                      className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
+                    >
+                      logout
+                    </a>
+                  </p>
+                </div>
+              </div>
             ) : (
               <a
                 onClick={() => requireAuth()}
@@ -183,51 +185,50 @@ export default function Shell({
                   + New plot
                 </a>
               </p>
+              <p className="text-[var(--highlight)]">
+                {isMine && (
+                  <>
+                    <a
+                      className="underline cursor-pointer hover:bg-[var(--highlight)] hover:text-black py-1"
+                      onClick={() => setSettingsOpen(true)}
+                    >
+                      Edit plot
+                      {comparison?.private && (
+                        <svg
+                          className="inline-block h-3 w-3 ml-1 mb-0.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <rect
+                            x="3"
+                            y="11"
+                            width="18"
+                            height="11"
+                            rx="2"
+                            ry="2"
+                          />
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                      )}
+                    </a>
+                  </>
+                )}
+                {isMine && countdown && (
+                  <>
+                    {" / "}
+                  </>
+                )}
+                {countdown && (
+                  <>
+                    <span className="text-[var(--highlight)] font-bold">
+                      {countdown}
+                    </span>
+                  </>
+                )}
+              </p>
             </div>
-            <p className="text-[var(--highlight)]">
-              {isMine && (
-                <>
-                  <a
-                    className="underline cursor-pointer hover:bg-[var(--highlight)] hover:text-black py-1"
-                    onClick={() => setSettingsOpen(true)}
-                  >
-                    Edit plot
-                    {comparison?.private && (
-                      <svg
-                        className="inline-block h-3 w-3 ml-1 mb-0.5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                      >
-                        <rect
-                          x="3"
-                          y="11"
-                          width="18"
-                          height="11"
-                          rx="2"
-                          ry="2"
-                        />
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                      </svg>
-                    )}
-                  </a>
-                </>
-              )}
-              {isMine && countdown && (
-                <>
-                  {" / "}
-                </>
-              )}
-              {countdown && (
-                <>
-                  <span className="text-[var(--highlight)] font-bold">
-                    {countdown}
-                  </span>
-                </>
-              )}
-            </p>
-
           </div>
         )}
       </div>
