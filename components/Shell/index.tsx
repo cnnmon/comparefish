@@ -110,47 +110,6 @@ export default function Shell({
         {comparisonId && (
           <div className="flex w-full items-center gap-2">
             <div className="flex flex-col w-full">
-              <p className="text-[var(--highlight)]">
-                {isMine && (
-                  <>
-                    <a
-                      className="underline cursor-pointer hover:bg-[var(--highlight)] hover:text-black py-1"
-                      onClick={() => setSettingsOpen(true)}
-                    >
-                      Edit plot
-                      {comparison?.private && (
-                        <svg
-                          className="inline-block h-3 w-3 ml-1 mb-0.5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <rect
-                            x="3"
-                            y="11"
-                            width="18"
-                            height="11"
-                            rx="2"
-                            ry="2"
-                          />
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                      )}
-                    </a>
-                  </>
-                )}{" "}
-                {countdown && (
-                  <>
-                    {" "}
-                    /{" "}
-                    <span className="text-[var(--highlight)] font-bold">
-                      {countdown}
-                    </span>
-                  </>
-                )}
-              </p>
-
               <div className="italic text-white">
                 {locked ? (
                   <p>
@@ -203,6 +162,50 @@ export default function Shell({
                 </a>
               </p>
             </div>
+            <p className="text-[var(--highlight)]">
+              {isMine && (
+                <>
+                  <a
+                    className="underline cursor-pointer hover:bg-[var(--highlight)] hover:text-black py-1"
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    Edit plot
+                    {comparison?.private && (
+                      <svg
+                        className="inline-block h-3 w-3 ml-1 mb-0.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <rect
+                          x="3"
+                          y="11"
+                          width="18"
+                          height="11"
+                          rx="2"
+                          ry="2"
+                        />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                    )}
+                  </a>
+                </>
+              )}
+              {isMine && countdown && (
+                <>
+                  {" / "}
+                </>
+              )}
+              {countdown && (
+                <>
+                  <span className="text-[var(--highlight)] font-bold">
+                    {countdown}
+                  </span>
+                </>
+              )}
+            </p>
+
           </div>
         )}
       </div>
