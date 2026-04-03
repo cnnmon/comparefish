@@ -103,7 +103,6 @@ export const getAll = query({
   handler: async (ctx, { comparisonId }) => {
     if (!comparisonId) return [];
     const userId = await auth.getUserId(ctx);
-    if (!userId) return [];
 
     const all = await ctx.db
       .query("placements")
@@ -113,7 +112,7 @@ export const getAll = query({
     const withUsers = await Promise.all(
       all.map(async (p) => {
         const display = await getUserDisplay(ctx, p.userId);
-        return { ...p, ...display, isMe: p.userId === userId };
+        return { ...p, ...display, isMe: !!userId && p.userId === userId };
       }),
     );
     return withUsers;

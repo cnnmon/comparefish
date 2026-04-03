@@ -59,7 +59,6 @@ export const getAll = query({
   handler: async (ctx, { comparisonId, showAll }) => {
     if (!comparisonId) return [];
     const userId = await auth.getUserId(ctx);
-    if (!userId) return [];
 
     const comparison = await ctx.db.get(comparisonId);
     const isLocked =
@@ -70,7 +69,7 @@ export const getAll = query({
       .withIndex("by_comparison", (q) => q.eq("comparisonId", comparisonId))
       .collect();
 
-    const relevant = isLocked || showAll
+    const relevant = isLocked || showAll || !userId
       ? all
       : all.filter(
           (f) => f.targetUserId === userId || f.fixerId === userId,
@@ -90,7 +89,7 @@ export const getAll = query({
           targetName: target?.name ?? "Anonymous",
           targetImage: target?.image ?? null,
           targetAvatar: targetProfile?.avatar ?? null,
-          isMine: f.fixerId === userId,
+          isMine: !!userId && f.fixerId === userId,
         };
       }),
     );

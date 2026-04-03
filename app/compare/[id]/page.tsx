@@ -1,8 +1,7 @@
 "use client";
 
 import { use, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useConvexAuth, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { api } from "../../../convex/_generated/api";
 import { Id } from "../../../convex/_generated/dataModel";
@@ -49,22 +48,5 @@ function ComparisonPage({ comparisonId }: { comparisonId: Id<"comparisons"> }) {
 
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { isAuthenticated, isLoading } = useConvexAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.replace("/login");
-    }
-  }, [isLoading, isAuthenticated, router]);
-
-  if (isLoading || !isAuthenticated) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
   return <ComparisonPage comparisonId={id as Id<"comparisons">} />;
 }

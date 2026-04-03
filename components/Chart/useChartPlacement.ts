@@ -12,6 +12,7 @@ export function useChartPlacement({
   onFix,
   onDeleteFix,
   quadrantMode,
+  requireAuth,
 }: {
   myPlacement: Point | null;
   allPlacements: PlacedPoint[];
@@ -20,6 +21,7 @@ export function useChartPlacement({
   onFix: (targetUserId: Id<"users">, x: number, y: number) => void;
   onDeleteFix: (fixId: Id<"fixes">) => void;
   quadrantMode?: QuadrantMode | null;
+  requireAuth?: () => boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<Point>(myPlacement ?? { x: 0, y: 0 });
@@ -89,6 +91,7 @@ export function useChartPlacement({
 
   const handlePointerDown = useCallback(
     (e: React.MouseEvent | React.TouchEvent) => {
+      if (requireAuth && !requireAuth()) return;
       if (isFixing) {
         const p = fromEvent(e);
         if (p && fixTarget) {
@@ -138,7 +141,7 @@ export function useChartPlacement({
         }
       }
     },
-    [isFixing, editingSelf, hasPlaced, hitTest, fromEvent, fixes, fixTarget, onFix, onPlace],
+    [isFixing, editingSelf, hasPlaced, hitTest, fromEvent, fixes, fixTarget, onFix, onPlace, requireAuth],
   );
 
   const handlePointerMove = useCallback(

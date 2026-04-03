@@ -7,7 +7,8 @@ import {
   useState,
   ReactNode,
 } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery, useConvexAuth } from "convex/react";
+import { useLoginModal } from "../LoginModal";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { getQuadrantMode, type Point, type PlacedPoint, type Fix, type QuadrantMode } from "./utils";
@@ -77,6 +78,8 @@ export function ChartProvider({
   const toggleShowAllFixes = useCallback(() => setShowAllFixes((v) => !v), []);
   const fixes = useQuery(api.fixes.getAll, { comparisonId, showAll: showAllFixes });
   const user = useQuery(api.users.currentUser);
+  const { isAuthenticated } = useConvexAuth();
+  const { requireAuth } = useLoginModal();
 
   const submitPlacement = useMutation(api.placements.submit);
   const submitFix = useMutation(api.fixes.submit);
@@ -116,6 +119,7 @@ export function ChartProvider({
     onFix,
     onDeleteFix,
     quadrantMode,
+    requireAuth: isAuthenticated ? undefined : requireAuth,
   });
 
   const value: ChartContextValue = {

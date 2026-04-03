@@ -1,7 +1,7 @@
 import { useState, useEffect, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useQuery } from "convex/react";
+import { useQuery, useConvexAuth } from "convex/react";
 import { motion } from "framer-motion";
 import { api } from "../../convex/_generated/api";
 import { AvatarPicker } from "./AvatarPicker";
@@ -14,6 +14,7 @@ import { Modal } from "../Modal";
 import { useMutation } from "convex/react";
 import { useChart } from "../Chart/ChartProvider";
 import { getUserName } from "../utils";
+import { useLoginModal } from "../LoginModal";
 
 export default function Shell({
   children,
@@ -23,7 +24,9 @@ export default function Shell({
   comparisonId: Id<"comparisons"> | null;
 }) {
   const router = useRouter();
+  const { isAuthenticated } = useConvexAuth();
   const { signOut } = useAuthActions();
+  const { requireAuth } = useLoginModal();
   const user = useQuery(api.users.currentUser);
   const comparison = useQuery(
     api.comparisons.get,
@@ -55,12 +58,10 @@ export default function Shell({
   }, [settingsOpen]);
   const isMine = comparison?.isMine ?? false;
 
-  if (!user) return null;
-
   return (
     <div className="flex flex-col min-h-screen items-center justify-center p-4">
       <div className="flex flex-col w-full absolute top-0 p-4">
-        <div className="flex w-full items-center justify-between">
+        <div className="flex w-full items-center justify-between md:flex-row flex-col ">
           {comparison && (<div className="flex flex-1 items-center gap-2">
             <h1
               className="text-3xl font-semibold tracking-tight cursor-pointer"
@@ -73,38 +74,49 @@ export default function Shell({
           </div>)}
 
           <div className="flex items-center gap-3">
-            <p className="text-sm">
-              {getUserName({
-                id: user?._id ?? "unknown",
-                name: user?.name ?? "",
-              })}
-            </p>
-            <Image
-              src={
-                resolveImage({
-                  name: user.name ?? "",
-                  avatar: user.avatar,
-                }) ?? ""
-              }
-              alt={user?.name || ""}
-              width={32}
-              height={32}
-              className="rounded-full object-cover transition-opacity hover:opacity-80 cursor-pointer scale-180"
-              onClick={() => setPickerOpen(!pickerOpen)}
-            />
-            <AvatarPicker
-              open={pickerOpen}
-              onClose={() => setPickerOpen(false)}
-              current={resolveAvatar(user?.name, user?.avatar)}
-            />
-            <p>
+            {isAuthenticated && user ? (
+              <>
+                <p className="text-sm">
+                  {getUserName({
+                    id: user._id ?? "unknown",
+                    name: user.name ?? "",
+                  })}
+                </p>
+                <Image
+                  src={
+                    resolveImage({
+                      name: user.name ?? "",
+                      avatar: user.avatar,
+                    }) ?? ""
+                  }
+                  alt={user.name || ""}
+                  width={32}
+                  height={32}
+                  className="rounded-full object-cover transition-opacity hover:opacity-80 cursor-pointer scale-180"
+                  onClick={() => setPickerOpen(!pickerOpen)}
+                />
+                <AvatarPicker
+                  open={pickerOpen}
+                  onClose={() => setPickerOpen(false)}
+                  current={resolveAvatar(user.name, user.avatar)}
+                />
+                <p>
+                  <a
+                    onClick={() => void signOut()}
+                    className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
+                  >
+                    logout
+                  </a>
+                </p>
+              </>
+            ) : (
               <a
-                onClick={() => void signOut()}
+                onClick={() => requireAuth()}
                 className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
               >
-                X
+                Sign in
               </a>
-            </p>
+            )}
           </div>
         </div>
         {comparisonId && (
@@ -113,7 +125,7 @@ export default function Shell({
               <div className="italic text-white">
                 {locked ? (
                   <p>
-                    <span>This plot is locked.</span>
+                    <span>This plot is locked{countdown ? ` (${countdown})` : ""}.</span>
                   </p>
                 ) : fixTarget ? (
                   <p className="text-[var(--highlight)]!">
@@ -129,7 +141,17 @@ export default function Shell({
                   <p>Click to place yourself.</p>
                 ) : (
                   <p>
-                    {myPlacement ? (
+                    {!isAuthenticated ? (
+                      <>
+                        <a
+                          className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
+                          onClick={() => requireAuth()}
+                        >
+                          Sign in
+                        </a>{" "}
+                        to place yourself.
+                      </>
+                    ) : myPlacement ? (
                       <>
                         Click on fish to fix their placements.{" "}
                         <a
@@ -156,7 +178,7 @@ export default function Shell({
                 {" / "}
                 <a
                   className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
-                  onClick={() => setCreating(true)}
+                  onClick={() => requireAuth() && setCreating(true)}
                 >
                   + New plot
                 </a>
