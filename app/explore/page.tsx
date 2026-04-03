@@ -8,23 +8,24 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { formatTimeLeft } from "@/components/Chart/ChartProvider";
 import { formatLabel, getUserName } from "@/components/utils";
-import { toPos, resolveImage } from "@/components/Chart/utils";
+import { toPos, resolveImage, getQuadrantMode, type AxisLabels } from "@/components/Chart/utils";
 import { Avatar, Axes } from "@/components/Chart/Avatar";
 import Shell from "@/components/Shell";
 import FeatheredScroll from "@/components/FeatheredScroll";
 import { CreatePlotModal } from "../ComparisonPicker";
 
-function PlotPreview({ comparisonId }: { comparisonId: Id<"comparisons"> }) {
+function PlotPreview({ comparisonId, labels }: { comparisonId: Id<"comparisons">; labels?: AxisLabels }) {
   const placements = useQuery(api.placements.getAll, { comparisonId });
+  const qm = labels ? getQuadrantMode(labels) : null;
 
   return (
     <div
       className="relative w-full aspect-square rounded-lg overflow-hidden"
       style={{ containerType: "inline-size" }}
     >
-      <Axes />
+      <Axes quadrantMode={qm} />
       {placements?.map((p) => {
-        const pos = toPos(p);
+        const pos = toPos(p, qm);
         return (
           <Avatar
             key={p._id}
@@ -74,7 +75,7 @@ export default function ExplorePage() {
                   onClick={() => router.push(`/compare/${c._id}`)}
                   className="flex flex-col rounded-lg border border-[var(--foreground)] cursor-pointer hover:bg-[var(--foreground)]/5 transition-colors overflow-hidden shrink-0 w-40"
                 >
-                  <PlotPreview comparisonId={c._id} />
+                  <PlotPreview comparisonId={c._id} labels={c} />
                   <div className="px-2 py-1.5 flex items-center gap-1">
                     {c.private && (
                       <svg
@@ -126,7 +127,7 @@ export default function ExplorePage() {
                   onClick={() => router.push(`/compare/${c._id}`)}
                   className="flex flex-col rounded-lg border border-[var(--foreground)] cursor-pointer hover:bg-[var(--foreground)]/5 transition-colors overflow-hidden"
                 >
-                  <PlotPreview comparisonId={c._id} />
+                  <PlotPreview comparisonId={c._id} labels={c} />
                   <div className="px-3 py-2 flex flex-col gap-0.5">
                     <span className="truncate font-medium">
                       {formatLabel(c)}

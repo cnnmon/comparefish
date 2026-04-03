@@ -95,6 +95,24 @@ export const togglePrivate = mutation({
   },
 });
 
+export const setExpiry = mutation({
+  args: {
+    id: v.id("comparisons"),
+    durationHours: v.optional(v.number()),
+  },
+  handler: async (ctx, { id, durationHours }) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const comparison = await ctx.db.get(id);
+    if (!comparison) throw new Error("Not found");
+    if (comparison.creatorId !== userId) throw new Error("Not authorized");
+    const expiresAt = durationHours
+      ? Date.now() + durationHours * 60 * 60 * 1000
+      : undefined;
+    await ctx.db.patch(id, { expiresAt });
+  },
+});
+
 export const remove = mutation({
   args: { id: v.id("comparisons") },
   handler: async (ctx, { id }) => {

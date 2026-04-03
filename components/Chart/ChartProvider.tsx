@@ -10,7 +10,7 @@ import {
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import type { Point, PlacedPoint, Fix } from "./utils";
+import { getQuadrantMode, type Point, type PlacedPoint, type Fix, type QuadrantMode } from "./utils";
 import {
   useChartPlacement,
   type ChartPlacementState,
@@ -39,6 +39,7 @@ type ChartContextValue = {
     yLabelTop?: string;
     yLabelBottom?: string;
   };
+  quadrantMode: QuadrantMode | null;
   countdown: string | null;
   locked: boolean;
   myPlacement: Point | null;
@@ -95,6 +96,14 @@ export function ChartProvider({
     [deleteFix],
   );
 
+  const labels = {
+    xLabelLeft: comparison?.xLabelLeft,
+    xLabelRight: comparison?.xLabelRight,
+    yLabelTop: comparison?.yLabelTop,
+    yLabelBottom: comparison?.yLabelBottom,
+  };
+  const quadrantMode = getQuadrantMode(labels);
+
   const myPlacement: Point | null = mine ? { x: mine.x, y: mine.y } : null;
   const resolvedPlacements = allPlacements ?? [];
   const resolvedFixes = fixes ?? [];
@@ -106,15 +115,12 @@ export function ChartProvider({
     onPlace,
     onFix,
     onDeleteFix,
+    quadrantMode,
   });
 
   const value: ChartContextValue = {
-    labels: {
-      xLabelLeft: comparison?.xLabelLeft,
-      xLabelRight: comparison?.xLabelRight,
-      yLabelTop: comparison?.yLabelTop,
-      yLabelBottom: comparison?.yLabelBottom,
-    },
+    labels,
+    quadrantMode,
     countdown,
     locked,
     myPlacement,

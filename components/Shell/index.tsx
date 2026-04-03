@@ -32,6 +32,7 @@ export default function Shell({
   const togglePrivate = useMutation(api.comparisons.togglePrivate);
   const renameComparison = useMutation(api.comparisons.rename);
   const removeComparison = useMutation(api.comparisons.remove);
+  const setExpiry = useMutation(api.comparisons.setExpiry);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -60,12 +61,17 @@ export default function Shell({
     <div className="flex flex-col min-h-screen items-center justify-center p-4">
       <div className="flex flex-col w-full absolute top-0 p-4">
         <div className="flex w-full items-center justify-between">
-          <h1
-            className="text-3xl font-semibold tracking-tight cursor-pointer"
-            onClick={() => router.push("/explore")}
-          >
-            comparefish
-          </h1>
+          {comparison && (<div className="flex flex-1 items-center gap-2">
+            <h1
+              className="text-3xl font-semibold tracking-tight cursor-pointer"
+              onClick={() => router.push("/explore")}
+            >
+              {formatLabel(comparison)}
+            </h1>
+            {" * "}
+            <h2 className="text-3xl!">by {getUserName({ id: comparison.creatorId ?? "", name: comparison.creatorName })}</h2>
+          </div>)}
+
           <div className="flex items-center gap-3">
             <p className="text-sm">
               {getUserName({
@@ -105,12 +111,8 @@ export default function Shell({
           <div className="flex w-full items-center gap-2">
             <div className="flex flex-col w-full">
               <p className="text-[var(--highlight)]">
-                {comparison
-                  ? `${formatLabel(comparison)} by ${getUserName({ id: comparison.creatorId ?? "", name: comparison.creatorName })}`
-                  : "Loading..."}
                 {isMine && (
                   <>
-                    {" / "}
                     <a
                       className="underline cursor-pointer hover:bg-[var(--highlight)] hover:text-black py-1"
                       onClick={() => setSettingsOpen(true)}
@@ -282,6 +284,37 @@ export default function Shell({
                   >
                     {comparison?.private ? "Make public" : "Make private"}
                   </button>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span>
+                    {locked
+                      ? "Locked"
+                      : comparison?.expiresAt
+                        ? `Locks ${countdown}`
+                        : "Never locks"}
+                  </span>
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      void setExpiry({
+                        id: comparisonId,
+                        durationHours: val || undefined,
+                      });
+                    }}
+                    className="h-12 rounded-lg border border-zinc-200 bg-transparent px-2 dark:border-zinc-700"
+                  >
+                    <option value="" disabled>
+                      {locked ? "Unlock / extend..." : "Change..."}
+                    </option>
+                    <option value={0}>Never lock</option>
+                    <option value={1}>Lock in 1 hour</option>
+                    <option value={6}>Lock in 6 hours</option>
+                    <option value={12}>Lock in 12 hours</option>
+                    <option value={24}>Lock in 1 day</option>
+                    <option value={72}>Lock in 3 days</option>
+                    <option value={168}>Lock in 1 week</option>
+                  </select>
                 </div>
                 <button
                   type="button"

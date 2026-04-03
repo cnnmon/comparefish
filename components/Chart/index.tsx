@@ -51,6 +51,7 @@ export default function Chart() {
   if (!ctx) throw new Error("Chart must be used within a ChartProvider");
   const {
     labels,
+    quadrantMode,
     locked,
     myDot,
     myAvatar,
@@ -75,6 +76,7 @@ export default function Chart() {
     showAllFixes,
     toggleShowAllFixes,
   } = ctx;
+  const qm = quadrantMode;
   const myUserId = allPlacements.find((p) => p.isMe)?.userId;
 
   const hoverLabel =
@@ -130,8 +132,8 @@ export default function Chart() {
         onTouchMove={handlePointerMove}
         onTouchEnd={handlePointerLeave}
       >
-        <Quadrants active={hoveredQuadrant} labels={labels} />
-        <Axes />
+        <Quadrants active={hoveredQuadrant} labels={labels} quadrantMode={qm} />
+        <Axes quadrantMode={qm} />
         <AxisLabels
           labels={[
             labels.yLabelTop,
@@ -139,6 +141,7 @@ export default function Chart() {
             labels.xLabelRight,
             labels.xLabelLeft,
           ]}
+          quadrantMode={qm}
         />
 
         {displayFixes.length > 0 && (
@@ -164,8 +167,8 @@ export default function Chart() {
                 (p) => p.userId === f.targetUserId,
               );
               if (!origin) return null;
-              const from = origin.isMe && hasPlaced ? myDot : toPos(origin);
-              const to = toPos(f);
+              const from = origin.isMe && hasPlaced ? myDot : toPos(origin, qm);
+              const to = toPos(f, qm);
               return (
                 <line
                   key={f._id}
@@ -184,7 +187,7 @@ export default function Chart() {
           </svg>
         )}
         {displayFixes.map((f) => {
-          const pos = toPos(f);
+          const pos = toPos(f, qm);
           return (
             <Avatar
               key={f._id}
@@ -219,7 +222,7 @@ export default function Chart() {
         {allPlacements
           .filter((p) => !p.isMe)
           .map((p) => {
-            const pos = toPos(p);
+            const pos = toPos(p, qm);
             const isFixingThis = fixTarget?.userId === p.userId;
             return (
               <Avatar
@@ -247,8 +250,8 @@ export default function Chart() {
         {fixTarget &&
           fixPos &&
           (() => {
-            const from = toPos(fixTarget);
-            const to = toPos(fixPos);
+            const from = toPos(fixTarget, qm);
+            const to = toPos(fixPos, qm);
             return (
               <>
                 <svg

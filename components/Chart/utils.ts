@@ -55,10 +55,43 @@ export function nameToColor(name: string) {
 
 export type Point = { x: number; y: number };
 
-export const toPos = (p: Point) => ({
-  left: 50 + p.x * 44,
-  top: 50 - p.y * 44,
-});
+export type AxisLabels = {
+  xLabelLeft?: string;
+  xLabelRight?: string;
+  yLabelTop?: string;
+  yLabelBottom?: string;
+};
+
+// Non-null when exactly one X and one Y label are set (single quadrant visible)
+export type QuadrantMode = { signX: 1 | -1; signY: 1 | -1 };
+
+export function getQuadrantMode(labels: AxisLabels): QuadrantMode | null {
+  const xCount = (labels.xLabelLeft ? 1 : 0) + (labels.xLabelRight ? 1 : 0);
+  const yCount = (labels.yLabelTop ? 1 : 0) + (labels.yLabelBottom ? 1 : 0);
+  if (xCount === 1 && yCount === 1) {
+    return {
+      signX: labels.xLabelRight ? 1 : -1,
+      signY: labels.yLabelTop ? 1 : -1,
+    };
+  }
+  return null;
+}
+
+const MARGIN = 6;
+const RANGE = 100 - 2 * MARGIN; // 88
+
+export const toPos = (p: Point, qm?: QuadrantMode | null) => {
+  if (qm) {
+    return {
+      left: 50 - qm.signX * (50 - MARGIN) + p.x * RANGE,
+      top: 50 + qm.signY * (50 - MARGIN) - p.y * RANGE,
+    };
+  }
+  return {
+    left: 50 + p.x * 44,
+    top: 50 - p.y * 44,
+  };
+};
 
 export type PlacedPoint = Point & {
   _id: string;

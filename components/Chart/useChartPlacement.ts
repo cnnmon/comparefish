@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Id } from "../../convex/_generated/dataModel";
-import { Point, toPos, PlacedPoint, Fix } from "./utils";
+import { Point, toPos, PlacedPoint, Fix, type QuadrantMode } from "./utils";
 
 export function useChartPlacement({
   myPlacement,
@@ -11,6 +11,7 @@ export function useChartPlacement({
   onPlace,
   onFix,
   onDeleteFix,
+  quadrantMode,
 }: {
   myPlacement: Point | null;
   allPlacements: PlacedPoint[];
@@ -18,6 +19,7 @@ export function useChartPlacement({
   onPlace: (x: number, y: number) => void;
   onFix: (targetUserId: Id<"users">, x: number, y: number) => void;
   onDeleteFix: (fixId: Id<"fixes">) => void;
+  quadrantMode?: QuadrantMode | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<Point>(myPlacement ?? { x: 0, y: 0 });
@@ -53,12 +55,19 @@ export function useChartPlacement({
           : (e as React.MouseEvent).clientY;
       const pctX = (clientX - rect.left) / rect.width;
       const pctY = (clientY - rect.top) / rect.height;
+      if (quadrantMode) {
+        const { signX, signY } = quadrantMode;
+        return {
+          x: Math.max(signX === 1 ? 0 : -1, Math.min(signX === 1 ? 1 : 0, (pctX - 0.5 + signX * 0.44) / 0.88)),
+          y: Math.max(signY === 1 ? 0 : -1, Math.min(signY === 1 ? 1 : 0, -(pctY - 0.5 - signY * 0.44) / 0.88)),
+        };
+      }
       return {
         x: Math.max(-1, Math.min(1, (pctX - 0.5) / 0.44)),
         y: Math.max(-1, Math.min(1, -(pctY - 0.5) / 0.44)),
       };
     },
-    [],
+    [quadrantMode],
   );
 
   const hitTest = useCallback(
@@ -66,7 +75,7 @@ export function useChartPlacement({
       const p = fromEvent(e);
       const el = containerRef.current;
       if (!p || !el) return null;
-      const scale = el.getBoundingClientRect().width * 0.44;
+      const scale = el.getBoundingClientRect().width * (quadrantMode ? 0.88 : 0.44);
       const hitRadius = el.getBoundingClientRect().width * 0.07;
       for (const other of allPlacements) {
         const dx = (p.x - other.x) * scale;
@@ -75,7 +84,7 @@ export function useChartPlacement({
       }
       return null;
     },
-    [allPlacements, fromEvent],
+    [allPlacements, fromEvent, quadrantMode],
   );
 
   const handlePointerDown = useCallback(
@@ -161,7 +170,7 @@ export function useChartPlacement({
   const startEditingSelf = useCallback(() => setEditingSelf(true), []);
   const cancelEditingSelf = useCallback(() => setEditingSelf(false), []);
 
-  const myDot = toPos(pos);
+  const myDot = toPos(pos, quadrantMode);
   const activeFixTargetId = fixTarget?.userId ?? null;
   const existingFix = fixTarget
     ? fixes.find((f) => f.isMine && f.targetUserId === fixTarget.userId)

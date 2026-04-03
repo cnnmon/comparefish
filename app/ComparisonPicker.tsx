@@ -9,6 +9,7 @@ import { Id } from "../convex/_generated/dataModel";
 import { formatTimeLeft } from "@/components/Chart/ChartProvider";
 import { twMerge } from "tailwind-merge";
 import { getUserName, formatLabel } from "@/components/utils";
+import { getQuadrantMode } from "@/components/Chart/utils";
 
 const defaultSettings = {
   name: "",
@@ -19,6 +20,77 @@ const defaultSettings = {
   yTop: "",
   yBottom: "",
 };
+
+function CreatePlotPreview({ settings }: { settings: typeof defaultSettings }) {
+  const qm = getQuadrantMode({
+    xLabelLeft: settings.xLeft.trim() || undefined,
+    xLabelRight: settings.xRight.trim() || undefined,
+    yLabelTop: settings.yTop.trim() || undefined,
+    yLabelBottom: settings.yBottom.trim() || undefined,
+  });
+  const vLeft = qm ? `${50 - qm.signX * 44}%` : "50%";
+  const hTop = qm ? `${50 + qm.signY * 44}%` : "50%";
+
+  const yTopPos = qm
+    ? { top: "1%", left: vLeft, transform: "translateX(-50%)" }
+    : { top: "1%", left: "50%", transform: "translateX(-50%)" };
+  const yBottomPos = qm
+    ? { bottom: "1%", left: vLeft, transform: "translateX(-50%)" }
+    : { bottom: "1%", left: "50%", transform: "translateX(-50%)" };
+  const xRightPos = qm
+    ? { right: "1%", top: hTop, transform: "translateY(-50%)" }
+    : { right: "1%", top: "50%", transform: "translateY(-50%)" };
+  const xLeftPos = qm
+    ? { left: "1%", top: hTop, transform: "translateY(-50%)" }
+    : { left: "1%", top: "50%", transform: "translateY(-50%)" };
+
+  return (
+    <div className="hidden sm:flex w-52 shrink-0 items-center">
+      <div className="relative w-full aspect-square">
+        <div
+          className="absolute top-[6%] bottom-[6%] w-[1.5px] bg-[var(--foreground)]"
+          style={{ left: vLeft }}
+        />
+        <div
+          className="absolute left-[6%] right-[6%] h-[1.5px] bg-[var(--foreground)]"
+          style={{ top: hTop }}
+        />
+        {settings.yTop.trim() && (
+          <span
+            className="absolute text-center text-xs bg-[var(--background)] px-1 whitespace-nowrap"
+            style={yTopPos}
+          >
+            {settings.yTop.trim()}
+          </span>
+        )}
+        {settings.yBottom.trim() && (
+          <span
+            className="absolute text-center text-xs bg-[var(--background)] px-1 whitespace-nowrap"
+            style={yBottomPos}
+          >
+            {settings.yBottom.trim()}
+          </span>
+        )}
+        {settings.xRight.trim() && (
+          <span
+            className="absolute text-right text-xs bg-[var(--background)] px-1 whitespace-nowrap"
+            style={xRightPos}
+          >
+            {settings.xRight.trim()}
+          </span>
+        )}
+        {settings.xLeft.trim() && (
+          <span
+            className="absolute text-left text-xs bg-[var(--background)] px-1 whitespace-nowrap"
+            style={xLeftPos}
+          >
+            {settings.xLeft.trim()}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function CreatePlotModal({
   open,
@@ -71,10 +143,10 @@ export function CreatePlotModal({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="flex w-full max-w-2xl gap-5 rounded-xl border border-[var(--foreground)] bg-[var(--background)] p-5 m-5"
+            className="flex w-full m-5 max-w-3xl rounded-xl border border-[var(--foreground)] bg-[var(--background)] flex-col md:flex-row  items-center"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex flex-1 flex-col gap-3">
+            <div className="flex flex-1 flex-col gap-3 md:border-r md:border-b-0 border-b p-5 w-full">
               <h2 className="font-semibold">New comparison</h2>
               <input
                 value={settings.name}
@@ -120,7 +192,7 @@ export function CreatePlotModal({
                   }
                   className="h-8 rounded-lg border border-zinc-200 bg-transparent px-2 dark:border-zinc-700"
                 >
-                  <option value="public">Public (shown in dropdown)</option>
+                  <option value="public">Public</option>
                   <option value="private">Private (share via link only)</option>
                 </select>
               </div>
@@ -159,31 +231,8 @@ export function CreatePlotModal({
               </div>
             </div>
 
-            <div className="hidden sm:flex w-52 shrink-0 items-center">
-              <div className="relative w-full aspect-square">
-                <div className="absolute left-1/2 top-[6%] bottom-[6%] w-[1.5px] bg-[var(--foreground)]" />
-                <div className="absolute top-1/2 left-[6%] right-[6%] h-[1.5px] bg-[var(--foreground)]" />
-                {settings.yTop.trim() && (
-                  <span className="absolute top-[1%] left-1/2 -translate-x-1/2 text-center text-xs bg-[var(--background)] px-1 whitespace-nowrap">
-                    {settings.yTop.trim()}
-                  </span>
-                )}
-                {settings.yBottom.trim() && (
-                  <span className="absolute bottom-[1%] left-1/2 -translate-x-1/2 text-center text-xs bg-[var(--background)] px-1 whitespace-nowrap">
-                    {settings.yBottom.trim()}
-                  </span>
-                )}
-                {settings.xRight.trim() && (
-                  <span className="absolute right-[1%] top-1/2 -translate-y-1/2 text-right text-xs bg-[var(--background)] px-1 whitespace-nowrap">
-                    {settings.xRight.trim()}
-                  </span>
-                )}
-                {settings.xLeft.trim() && (
-                  <span className="absolute left-[1%] top-1/2 -translate-y-1/2 text-left text-xs bg-[var(--background)] px-1 whitespace-nowrap">
-                    {settings.xLeft.trim()}
-                  </span>
-                )}
-              </div>
+            <div className="p-5 flex flex-col h-80 max-w-80 md:flex-1">
+              <CreatePlotPreview settings={settings} />
             </div>
           </motion.div>
         </motion.div>
