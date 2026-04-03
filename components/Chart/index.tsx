@@ -352,7 +352,7 @@ export default function Chart() {
               Exit self-placement
             </button>
           )}
-          {!fixTarget && !editingSelf && fixes.length > 0 && (
+          {!fixTarget && !editingSelf && hasPlaced && (
             <button
               onClick={toggleShowAllFixes}
               className="text-xs opacity-40 hover:opacity-100 transition-opacity"

@@ -64,8 +64,9 @@ export const create = mutation({
     if (!rest.yLabelTop && !rest.yLabelBottom)
       throw new Error("At least one y-axis label required");
     const date = new Date().toISOString().slice(0, 10);
-    const hours = durationHours ?? 24;
-    const expiresAt = Date.now() + hours * 60 * 60 * 1000;
+    const expiresAt = durationHours
+      ? Date.now() + durationHours * 60 * 60 * 1000
+      : undefined;
     return await ctx.db.insert("comparisons", { date, creatorId: userId, expiresAt, ...rest });
   },
 });

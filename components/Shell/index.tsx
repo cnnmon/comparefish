@@ -8,6 +8,7 @@ import { AvatarPicker } from "./AvatarPicker";
 import Image from "next/image";
 import { resolveAvatar, resolveImage } from "../Chart/utils";
 import { formatLabel } from "../utils";
+import { CreatePlotModal } from "@/app/ComparisonPicker";
 import { Id } from "@/convex/_generated/dataModel";
 import { Modal } from "../Modal";
 import { useMutation } from "convex/react";
@@ -34,6 +35,7 @@ export default function Shell({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [copied, setCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
@@ -190,6 +192,13 @@ export default function Shell({
                 >
                   More plots
                 </a>
+                {" / "}
+                <a
+                  className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
+                  onClick={() => setCreating(true)}
+                >
+                  + New plot
+                </a>
               </p>
             </div>
           </div>
@@ -208,6 +217,7 @@ export default function Shell({
           transition={{ delay: 0.1, duration: 0.3 }}
           className="flex flex-col items-center justify-center gap-2 w-full"
         >
+          <CreatePlotModal open={creating} onClose={() => setCreating(false)} />
           <Modal
             open={shareOpen}
             onClose={() => setShareOpen(false)}

@@ -19,16 +19,14 @@ import {
 export function formatTimeLeft(expiresAt: number | undefined) {
   if (!expiresAt) return null;
   const diff = expiresAt - Date.now();
+  const abs = Math.abs(diff);
+  const hours = Math.floor(abs / 3600000);
+  const mins = Math.floor((abs % 3600000) / 60000);
   if (diff <= 0) {
-    // Time ago
-    const hours = Math.floor(diff / 3600000);
-    const mins = Math.floor((diff % 3600000) / 60000);
     if (hours >= 24) return `${Math.floor(hours / 24)}d ago`;
     if (hours > 0) return `${hours}h ago`;
-    return `ended ${mins * -1}m ago`;
+    return `ended ${mins}m ago`;
   }
-  const hours = Math.floor(diff / 3600000);
-  const mins = Math.floor((diff % 3600000) / 60000);
   if (hours >= 24) return `${Math.floor(hours / 24)}d left`;
   if (hours > 0) return `${hours}h left`;
   return `${mins}m left`;
@@ -74,7 +72,7 @@ export function ChartProvider({
   const countdown = formatTimeLeft(comparison?.expiresAt ?? undefined);
   const mine = useQuery(api.placements.getMine, { comparisonId });
   const allPlacements = useQuery(api.placements.getAll, { comparisonId });
-  const [showAllFixes, setShowAllFixes] = useState(false);
+  const [showAllFixes, setShowAllFixes] = useState(true);
   const toggleShowAllFixes = useCallback(() => setShowAllFixes((v) => !v), []);
   const fixes = useQuery(api.fixes.getAll, { comparisonId, showAll: showAllFixes });
   const user = useQuery(api.users.currentUser);

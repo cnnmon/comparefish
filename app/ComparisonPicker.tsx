@@ -13,7 +13,7 @@ import { getUserName, formatLabel } from "@/components/utils";
 const defaultSettings = {
   name: "",
   isPrivate: false,
-  durationHours: 24,
+  durationHours: 0,
   xLeft: "",
   xRight: "",
   yTop: "",
@@ -44,7 +44,7 @@ export function CreatePlotModal({
     const id = await createComparison({
       name: settings.name.trim() || undefined,
       private: settings.isPrivate || undefined,
-      durationHours: settings.durationHours,
+      durationHours: settings.durationHours || undefined,
       xLabelLeft: settings.xLeft.trim() || undefined,
       xLabelRight: settings.xRight.trim() || undefined,
       yLabelTop: settings.yTop.trim() || undefined,
@@ -133,6 +133,7 @@ export function CreatePlotModal({
                   }
                   className="h-8 rounded-lg border border-zinc-200 bg-transparent px-2 dark:border-zinc-700"
                 >
+                  <option value={0}>Never</option>
                   <option value={1}>1 hour</option>
                   <option value={6}>6 hours</option>
                   <option value={12}>12 hours</option>

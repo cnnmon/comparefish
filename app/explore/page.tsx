@@ -131,7 +131,7 @@ export default function ExplorePage() {
                     <span className="truncate font-medium">
                       {formatLabel(c)}
                     </span>
-                    <span className="flex items-center justify-between text-sm opacity-60">
+                    <span className="flex flex-col justify-between text-sm opacity-60">
                       <span>
                         {getUserName({
                           id: c.creatorId ?? "unknown",
