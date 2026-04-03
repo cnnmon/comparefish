@@ -83,10 +83,16 @@ export const getAll = query({
           .query("userProfiles")
           .withIndex("by_user", (q) => q.eq("userId", f.targetUserId))
           .unique();
+        const fixerName = fixer?.name
+          || (fixer?.email ? String(fixer.email).split("@")[0] : null)
+          || "Anonymous";
+        const targetName = target?.name
+          || (target?.email ? String(target.email).split("@")[0] : null)
+          || "Anonymous";
         return {
           ...f,
-          fixerName: fixer?.name ?? "Anonymous",
-          targetName: target?.name ?? "Anonymous",
+          fixerName,
+          targetName,
           targetImage: target?.image ?? null,
           targetAvatar: targetProfile?.avatar ?? null,
           isMine: !!userId && f.fixerId === userId,

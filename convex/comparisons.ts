@@ -2,6 +2,15 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { auth } from "./auth";
 
+function getDisplayName(user: Record<string, unknown> | null): string {
+  if (!user) return "Unknown";
+  const name = typeof user.name === "string" && user.name ? user.name : null;
+  if (name) return name;
+  const email = typeof user.email === "string" && user.email ? user.email : null;
+  if (email) return email.split("@")[0];
+  return "Unknown";
+}
+
 export const get = query({
   args: { id: v.string() },
   handler: async (ctx, { id }) => {
@@ -12,10 +21,7 @@ export const get = query({
     if (!comparison) return null;
     const locked = comparison.expiresAt ? Date.now() >= comparison.expiresAt : false;
     const creator = comparison.creatorId ? await ctx.db.get(comparison.creatorId) : null;
-    const creatorName =
-      (creator && "name" in creator && typeof creator.name === "string" && creator.name
-        ? creator.name
-        : null) ?? "Unknown";
+    const creatorName = getDisplayName(creator as Record<string, unknown> | null);
     return { ...comparison, isMine: comparison.creatorId === userId, locked, creatorName };
   },
 });
@@ -35,10 +41,7 @@ export const list = query({
           .withIndex("by_comparison", (q) => q.eq("comparisonId", c._id))
           .collect();
         const creator = c.creatorId ? await ctx.db.get(c.creatorId) : null;
-        const creatorName =
-          (creator && "name" in creator && typeof creator.name === "string" && creator.name
-            ? creator.name
-            : null) ?? "Unknown";
+        const creatorName = getDisplayName(creator as Record<string, unknown> | null);
         return { ...c, placementCount: placements.length, creatorName };
       }),
     );

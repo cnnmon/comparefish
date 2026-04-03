@@ -10,8 +10,11 @@ async function getUserDisplay(ctx: QueryCtx, userId: Id<"users">) {
     .query("userProfiles")
     .withIndex("by_user", (q) => q.eq("userId", userId))
     .unique();
+  const name = user?.name
+    || (user?.email ? String(user.email).split("@")[0] : null)
+    || "Anonymous";
   return {
-    name: user?.name ?? "Anonymous",
+    name,
     image: user?.image ?? null,
     avatar: profile?.avatar ?? null,
   };
