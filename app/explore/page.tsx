@@ -13,6 +13,7 @@ import { Avatar, Axes } from "@/components/Chart/Avatar";
 import Shell from "@/components/Shell";
 import FeatheredScroll from "@/components/FeatheredScroll";
 import { CreatePlotModal } from "../ComparisonPicker";
+import { useLoginModal } from "@/components/LoginModal";
 
 function PlotPreview({ comparisonId, labels }: { comparisonId: Id<"comparisons">; labels?: AxisLabels }) {
   const placements = useQuery(api.placements.getAll, { comparisonId });
@@ -46,6 +47,7 @@ export default function ExplorePage() {
   const comparisons = useQuery(api.comparisons.list);
   const user = useQuery(api.users.currentUser);
   const [creating, setCreating] = useState(false);
+  const { requireAuth } = useLoginModal();
   const myPlots = comparisons?.filter((c) => user && c.creatorId === user._id);
   const publicPlots = comparisons?.filter((c) => !c.private);
 
@@ -56,12 +58,12 @@ export default function ExplorePage() {
         direction="vertical"
         className="flex-col! w-full gap-6 overflow-y-auto py-8"
       >
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg">{isAuthenticated ? "Your plots" : "Public plots"}</h2>
+          <button onClick={() => requireAuth() && setCreating(true)}>+ New plot</button>
+        </div>
         {isAuthenticated && (
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg">Your plots</h2>
-              <button onClick={() => setCreating(true)}>+ Create plot</button>
-            </div>
             {myPlots === undefined ? (
               <p className="opacity-50">Loading...</p>
             ) : myPlots.length === 0 ? (
@@ -109,9 +111,7 @@ export default function ExplorePage() {
           </div>
         )}
 
-        <div>
-          <h2 className="text-lg mb-2">Public plots</h2>
-        </div>
+        {!isAuthenticated ? null : <h2 className="text-lg mb-2">Public plots</h2>}
 
         {publicPlots === undefined ? (
           <p className="opacity-50">Loading...</p>

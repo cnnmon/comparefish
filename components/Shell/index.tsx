@@ -61,8 +61,8 @@ export default function Shell({
   return (
     <div className="flex flex-col min-h-screen items-center justify-center p-4">
       <div className="flex flex-col w-full absolute top-0 p-4">
-        <div className="flex w-full items-center justify-between md:flex-row flex-col ">
-          {comparison && (<div className="flex flex-1 items-center gap-2 flex-col md:flex-row">
+        <div className="flex w-full md:items-center justify-between md:flex-row flex-col md:gap-2">
+          {comparison && (<div className="flex flex-1 flex-col md:flex-row md:gap-2">
             <h1
               className="text-3xl font-semibold tracking-tight cursor-pointer"
               onClick={() => router.push("/explore")}
@@ -75,7 +75,7 @@ export default function Shell({
 
           <div className="flex items-center gap-3 justify-between">
             {isAuthenticated && user && (
-              <div className="flex gap-4 items-center">
+              <div className="flex gap-4">
                 <p className="text-sm">
                   {getUserName({
                     id: user._id ?? "unknown",
@@ -116,7 +116,7 @@ export default function Shell({
         </div>
         {comparisonId && (
           <div className="flex w-full items-center gap-2">
-            <div className="flex flex-col w-full text-center md:text-left">
+            <div className="flex flex-col w-full">
               <div className="italic text-white">
                 {locked ? (
                   <p>
