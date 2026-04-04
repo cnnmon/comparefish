@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "comparisons",
+  title: "comparefish",
   description: "compare you and your friends",
   icons: {
     icon: "/assets/fish/fish-1.png",

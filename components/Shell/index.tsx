@@ -36,6 +36,7 @@ export default function Shell({
   const renameComparison = useMutation(api.comparisons.rename);
   const removeComparison = useMutation(api.comparisons.remove);
   const setExpiry = useMutation(api.comparisons.setExpiry);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -62,7 +63,7 @@ export default function Shell({
     <div className="flex flex-col min-h-screen items-center justify-center p-4">
       <div className="flex flex-col w-full absolute top-0 p-4">
         <div className="flex w-full md:items-center justify-between md:flex-row flex-col md:gap-2">
-          {comparison && (<div className="flex flex-1 flex-col md:flex-row md:gap-2">
+          {comparison ? (<div className="flex flex-1 flex-col md:flex-row md:gap-2">
             <h1
               className="text-3xl font-semibold tracking-tight cursor-pointer"
               onClick={() => router.push("/explore")}
@@ -71,7 +72,17 @@ export default function Shell({
             </h1>
             <span className="hidden md:block">{" * "}</span>
             <h2 className="text-3xl!">by {getUserName({ id: comparison.creatorId ?? "", name: comparison.creatorName })}</h2>
-          </div>)}
+          </div>) : (
+            <div className="flex flex-col">
+              <h1 className="text-3xl font-semibold tracking-tight">comparefish</h1>
+              <a
+                onClick={() => setAboutOpen(true)}
+                className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1 w-fit"
+              >
+                About
+              </a>
+            </div>
+          )}
 
           <div className="flex items-center gap-3 justify-between">
             {isAuthenticated && user && (
@@ -239,6 +250,29 @@ export default function Shell({
           className="flex flex-col items-center justify-center gap-2 w-full"
         >
           <CreatePlotModal open={creating} onClose={() => setCreating(false)} />
+          <Modal
+            open={aboutOpen}
+            onClose={() => setAboutOpen(false)}
+            title="About comparefish"
+          >
+            <div className="flex flex-col gap-3">
+              <p>
+                Place yourself and your friends on any dimensions in a 2D plane, then "fix" their placements.
+                <br /><br />How? Just create a plot, then send the link to whoever you want. They will need to sign in with Google to place themselves. Afterwards, you can click on their placement to enter "fix" mode -- just click somewhere else that feels more right.
+              </p>
+              <p>
+                Made by{" "}
+                <a
+                  href="https://www.tiffanywang.me/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:bg-[var(--foreground)] hover:text-black"
+                >
+                  cnnmon
+                </a>.
+              </p>
+            </div>
+          </Modal>
           <Modal
             open={shareOpen}
             onClose={() => setShareOpen(false)}
