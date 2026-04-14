@@ -55,6 +55,7 @@ type ChartContextValue = {
   onPlace: (x: number, y: number) => void;
   onFix: (targetUserId: Id<"users">, x: number, y: number) => void;
   onDeleteFix: (fixId: Id<"fixes">) => void;
+  onDeletePlacement: () => void;
   showAllFixes: boolean;
   toggleShowAllFixes: () => void;
   dimensions: Dimension[];
@@ -102,6 +103,7 @@ export function ChartProvider({
   const submitPlacement = useMutation(api.placements.submit);
   const submitFix = useMutation(api.fixes.submit);
   const deleteFix = useMutation(api.fixes.remove);
+  const deletePlacement = useMutation(api.placements.deleteMine);
 
   const dims = comparison ? getDimensions(comparison) : [];
   const dimPairs = getDimensionPairs(dims.length);
@@ -127,6 +129,10 @@ export function ChartProvider({
   const onDeleteFix = useCallback(
     (fixId: Id<"fixes">) => void deleteFix({ fixId }),
     [deleteFix],
+  );
+  const onDeletePlacement = useCallback(
+    () => void deletePlacement({ comparisonId }),
+    [deletePlacement, comparisonId],
   );
 
   const placePair = useCallback(
@@ -184,6 +190,7 @@ export function ChartProvider({
     onPlace,
     onFix,
     onDeleteFix,
+    onDeletePlacement,
     quadrantMode,
     requireAuth: isAuthenticated ? undefined : requireAuth,
     dimCount,
@@ -207,6 +214,7 @@ export function ChartProvider({
     onPlace,
     onFix,
     onDeleteFix,
+    onDeletePlacement,
     showAllFixes,
     toggleShowAllFixes,
     dimensions: dims,

@@ -19,6 +19,7 @@ export function useChartPlacement({
   fixedDimIdx = -1,
   flat = false,
   onLiveUpdate,
+  onDeletePlacement,
 }: {
   myPlacement: Point | null;
   myValues: number[] | null;
@@ -27,6 +28,7 @@ export function useChartPlacement({
   onPlace: (x: number, y: number) => void;
   onFix: (targetUserId: Id<"users">, x: number, y: number) => void;
   onDeleteFix?: (fixId: Id<"fixes">) => void;
+  onDeletePlacement?: () => void;
   quadrantMode?: QuadrantMode | null;
   requireAuth?: () => boolean;
   dimCount?: number;
@@ -44,6 +46,7 @@ export function useChartPlacement({
   const [hoveredUserId, setHoveredUserId] = useState<Id<"users"> | null>(null);
   const [hoveredQuadrant, setHoveredQuadrant] = useState<number | null>(null);
   const [draggingSelf, setDraggingSelf] = useState(false);
+  const [selfNearEdge, setSelfNearEdge] = useState(false);
 
   // Drag tracking via ref to avoid stale closures in move/up handlers
   const dragRef = useRef<{ type: "self" | "fix"; target?: PlacedPoint } | null>(null);
@@ -79,11 +82,39 @@ export function useChartPlacement({
   const use3D = dimCount === 3 && !flat;
   const fixedVal = use3D && myValues ? (myValues[fixedDimIdx] ?? 0) : 0;
 
-  const fromEvent = useCallback(
-    (e: React.MouseEvent | React.TouchEvent): Point | null => {
+  const fromClientXY = useCallback(
+    (clientX: number, clientY: number, unclamped = false): Point | null => {
       const el = containerRef.current;
       if (!el) return null;
       const rect = el.getBoundingClientRect();
+      const pctX = (clientX - rect.left) / rect.width;
+      const pctY = (clientY - rect.top) / rect.height;
+      const clamp = unclamped
+        ? (v: number) => v
+        : (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+      if (use3D) {
+        return fromScreen3D(pctX, pctY, activePair, fixedDimIdx, fixedVal);
+      }
+      if (dimCount === 1) {
+        return { x: clamp((pctX - 0.5) / 0.44, -1, 1), y: 0 };
+      }
+      if (quadrantMode) {
+        const { signX, signY } = quadrantMode;
+        return {
+          x: clamp((pctX - 0.5 + signX * 0.44) / 0.88, signX === 1 ? 0 : -1, signX === 1 ? 1 : 0),
+          y: clamp(-(pctY - 0.5 - signY * 0.44) / 0.88, signY === 1 ? 0 : -1, signY === 1 ? 1 : 0),
+        };
+      }
+      return {
+        x: clamp((pctX - 0.5) / 0.44, -1, 1),
+        y: clamp(-(pctY - 0.5) / 0.44, -1, 1),
+      };
+    },
+    [quadrantMode, dimCount, activePair, fixedDimIdx, fixedVal, use3D],
+  );
+
+  const fromEvent = useCallback(
+    (e: React.MouseEvent | React.TouchEvent, unclamped = false): Point | null => {
       const clientX =
         "touches" in e
           ? (e.touches[0]?.clientX ?? (e as unknown as { changedTouches: TouchList }).changedTouches?.[0]?.clientX)
@@ -93,30 +124,9 @@ export function useChartPlacement({
           ? (e.touches[0]?.clientY ?? (e as unknown as { changedTouches: TouchList }).changedTouches?.[0]?.clientY)
           : (e as React.MouseEvent).clientY;
       if (clientX == null || clientY == null) return null;
-      const pctX = (clientX - rect.left) / rect.width;
-      const pctY = (clientY - rect.top) / rect.height;
-      if (use3D) {
-        return fromScreen3D(pctX, pctY, activePair, fixedDimIdx, fixedVal);
-      }
-      if (dimCount === 1) {
-        return {
-          x: Math.max(-1, Math.min(1, (pctX - 0.5) / 0.44)),
-          y: 0,
-        };
-      }
-      if (quadrantMode) {
-        const { signX, signY } = quadrantMode;
-        return {
-          x: Math.max(signX === 1 ? 0 : -1, Math.min(signX === 1 ? 1 : 0, (pctX - 0.5 + signX * 0.44) / 0.88)),
-          y: Math.max(signY === 1 ? 0 : -1, Math.min(signY === 1 ? 1 : 0, -(pctY - 0.5 - signY * 0.44) / 0.88)),
-        };
-      }
-      return {
-        x: Math.max(-1, Math.min(1, (pctX - 0.5) / 0.44)),
-        y: Math.max(-1, Math.min(1, -(pctY - 0.5) / 0.44)),
-      };
+      return fromClientXY(clientX, clientY, unclamped);
     },
-    [quadrantMode, dimCount, activePair, fixedDimIdx, fixedVal, use3D],
+    [fromClientXY],
   );
 
   const hitTest = useCallback(
@@ -191,14 +201,9 @@ export function useChartPlacement({
         setHoveredQuadrant(row * 2 + col);
       }
       if (dragRef.current) {
-        if (p) {
-          if (dragRef.current.type === "self") {
-            setPos(p);
-            broadcastLive(p);
-          } else {
-            setFixPos(p);
-          }
-        }
+        // Self-drag position is handled by window-level listeners
+        if (dragRef.current.type === "self") return;
+        if (p) setFixPos(p);
         return;
       }
       setHoveredUserId(hitTest(e)?.userId ?? null);
@@ -206,15 +211,30 @@ export function useChartPlacement({
     [hitTest, fromEvent],
   );
 
+  const onDeletePlacementRef = useRef(onDeletePlacement);
+  onDeletePlacementRef.current = onDeletePlacement;
+  const selfNearEdgeRef = useRef(false);
+  selfNearEdgeRef.current = selfNearEdge;
+
   const handlePointerUp = useCallback(() => {
     if (!dragRef.current) return;
     const drag = dragRef.current;
     dragRef.current = null;
     if (drag.type === "self") {
-      const p = posRef.current;
-      onPlace(p.x, p.y);
+      const wasNearEdge = selfNearEdgeRef.current;
       setDraggingSelf(false);
+      setSelfNearEdge(false);
       broadcastLive(null);
+      if (wasNearEdge && onDeletePlacementRef.current) {
+        onDeletePlacementRef.current();
+        setHasPlaced(false);
+        return;
+      }
+      const p = posRef.current;
+      const cx = Math.max(-1, Math.min(1, p.x));
+      const cy = Math.max(-1, Math.min(1, p.y));
+      setPos({ x: cx, y: cy });
+      onPlace(cx, cy);
     } else if (drag.target) {
       const p = fixPosRef.current;
       if (p) {
@@ -238,8 +258,9 @@ export function useChartPlacement({
 
   const handlePointerLeave = useCallback(() => {
     if (dragRef.current) {
+      // During self-drag, window listeners handle the release — don't cancel here
+      if (dragRef.current.type === "self") return;
       dragRef.current = null;
-      setDraggingSelf(false);
       const mp = myPlacementRef.current;
       if (mp) setPos(mp);
       setFixTarget(null);
@@ -260,6 +281,31 @@ export function useChartPlacement({
     return toPos(pos, quadrantMode);
   })();
   const activeFixTargetId = fixTarget?.userId ?? null;
+
+  // Attach window-level listeners during self-drag so we can detect
+  // the pointer leaving the chart area and releasing outside it
+  const fromClientXYRef = useRef(fromClientXY);
+  fromClientXYRef.current = fromClientXY;
+  useEffect(() => {
+    if (!draggingSelf) return;
+    const onMouseMove = (e: MouseEvent) => {
+      const p = fromClientXYRef.current(e.clientX, e.clientY, true);
+      if (!p) return;
+      setSelfNearEdge(Math.abs(p.x) > 1.3 || Math.abs(p.y) > 1.3);
+      setPos(p);
+      broadcastLive(p);
+    };
+    const onMouseUp = () => {
+      if (!dragRef.current || dragRef.current.type !== "self") return;
+      handlePointerUp();
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [draggingSelf, handlePointerUp, broadcastLive]);
 
   const fixNearOrigin = (() => {
     if (!fixTarget || !fixPos) return false;
@@ -285,6 +331,7 @@ export function useChartPlacement({
     handlePointerUp,
     handlePointerLeave,
     fixNearOrigin,
+    selfNearEdge,
   };
 }
 

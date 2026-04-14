@@ -79,6 +79,18 @@ img {
   75% { rotate: 4deg; }
 }
 
+@keyframes wiggle-hard {
+  0%, 100% { rotate: 0deg; }
+  20% { rotate: -9deg; }
+  40% { rotate: 10deg; }
+  60% { rotate: -10deg; }
+  80% { rotate: 8deg; }
+}
+
 @utility animate-wiggle {
   animation: wiggle 0.3s ease-in-out infinite;
+}
+
+@utility animate-wiggle-hard {
+  animation: wiggle-hard 0.25s ease-in-out infinite;
 }

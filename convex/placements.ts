@@ -64,6 +64,32 @@ export const submit = mutation({
   },
 });
 
+export const deleteMine = mutation({
+  args: { comparisonId: v.id("comparisons") },
+  handler: async (ctx, { comparisonId }) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const existing = await ctx.db
+      .query("placements")
+      .withIndex("by_user_comparison", (q) =>
+        q.eq("userId", userId).eq("comparisonId", comparisonId),
+      )
+      .unique();
+    if (!existing) return;
+    // Also delete any fixes targeting or made by this user for this comparison
+    const fixes = await ctx.db
+      .query("fixes")
+      .withIndex("by_comparison", (q) => q.eq("comparisonId", comparisonId))
+      .collect();
+    for (const fix of fixes) {
+      if (fix.fixerId === userId || fix.targetUserId === userId) {
+        await ctx.db.delete(fix._id);
+      }
+    }
+    await ctx.db.delete(existing._id);
+  },
+});
+
 export const getMine = query({
   args: { comparisonId: v.optional(v.id("comparisons")) },
   handler: async (ctx, { comparisonId }) => {

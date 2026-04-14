@@ -99,7 +99,7 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
     hoveredUserId, hoveredQuadrant, activeFixTargetId,
     draggingSelf, handlePointerDown, handleTap,
     handlePointerMove, handlePointerUp, handlePointerLeave,
-    fixNearOrigin,
+    fixNearOrigin, selfNearEdge: miniSelfNearEdge,
   } = useChartPlacement({
     myPlacement,
     myValues,
@@ -108,6 +108,7 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
     onPlace,
     onFix,
     onDeleteFix: ctx.onDeleteFix,
+    onDeletePlacement: ctx.onDeletePlacement,
     quadrantMode: qm,
     requireAuth: authGate,
     dimCount: 2,
@@ -246,7 +247,8 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
       {hasPlaced && (
         <Avatar pos={effectiveMyDot}
           image={resolveImage({ name: myName, avatar: myAvatar })}
-          name={myName} label="me"
+          name={myName} label={draggingSelf && miniSelfNearEdge ? "" : "me"}
+          dim={draggingSelf && miniSelfNearEdge}
           wiggle={hoveredUserId === myUserId && !fixTarget && !draggingSelf}
           status={
             fixTarget?.userId === myUserId ? "fixing"
@@ -258,7 +260,9 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
       )}
 
       <CursorLabel containerRef={containerRef} label={
-        fixTarget && fixNearOrigin ? "Cancel fix?" : null
+        draggingSelf && miniSelfNearEdge ? "Clear placement?"
+          : fixTarget && fixNearOrigin ? "Cancel fix?"
+          : null
       } />
     </div>
   );
@@ -292,6 +296,7 @@ export default function Chart() {
     handlePointerLeave,
     hoveredQuadrant,
     fixNearOrigin,
+    selfNearEdge,
     showAllFixes,
     toggleShowAllFixes,
     dimensions,
@@ -362,6 +367,7 @@ export default function Chart() {
 
   const hoverLabel = (() => {
     if (locked) return null;
+    if (draggingSelf && selfNearEdge) return "Clear placement?";
     if (fixTarget && fixNearOrigin) return "Cancel fix?";
     if (hoveredUserId && !fixTarget && !draggingSelf)
       return hoveredUserId === myUserId
@@ -593,7 +599,8 @@ export default function Chart() {
               avatar: myAvatar,
             })}
             name={myName}
-            label="me"
+            label={draggingSelf && selfNearEdge ? "" : "me"}
+            dim={draggingSelf && selfNearEdge}
             wiggle={hoveredUserId === myUserId && !fixTarget && !draggingSelf}
             status={
               fixTarget?.userId === myUserId
