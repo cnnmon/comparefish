@@ -73,34 +73,43 @@ export default async function OgImage({
       >
         {/* Chart axes — centered crosshair */}
         {dimCount === 3 ? (
-          <div style={{
-            position: "absolute", top: 0, left: 0, width: 1200, height: 630, display: "flex",
-          }}>
+          <>
             {[0, 60, 120].map((deg) => (
               <div key={deg} style={{
                 position: "absolute",
-                left: 350, top: 314,
-                width: 500, height: 2,
+                left: "50%",
+                top: "50%",
+                width: 500,
+                height: 2,
+                marginLeft: -250,
+                marginTop: -1,
                 background: FG,
                 opacity: 0.15,
                 transform: `rotate(${deg}deg)`,
-                transformOrigin: "center center",
                 display: "flex",
               }} />
             ))}
-          </div>
+          </>
         ) : (<>
           <div style={{
             position: "absolute",
-            left: 599, top: 65,
-            width: 2, height: 500,
+            left: "50%",
+            top: "50%",
+            marginLeft: -1,
+            marginTop: -250,
+            width: 2,
+            height: 500,
             background: FG,
             display: "flex",
           }} />
           <div style={{
             position: "absolute",
-            left: 350, top: 314,
-            width: 500, height: 2,
+            left: "50%",
+            top: "50%",
+            marginLeft: -250,
+            marginTop: -1,
+            width: 500,
+            height: 2,
             background: FG,
             display: "flex",
           }} />
