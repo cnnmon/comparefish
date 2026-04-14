@@ -75,8 +75,8 @@ img {
 
 @keyframes wiggle {
   0%, 100% { rotate: 0deg; }
-  25% { rotate: -8deg; }
-  75% { rotate: 8deg; }
+  25% { rotate: -4deg; }
+  75% { rotate: 4deg; }
 }
 
 @utility animate-wiggle {
