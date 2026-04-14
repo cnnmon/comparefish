@@ -9,86 +9,103 @@ import { Id } from "../convex/_generated/dataModel";
 import { formatTimeLeft } from "@/components/Chart/ChartProvider";
 import { twMerge } from "tailwind-merge";
 import { getUserName, formatLabel } from "@/components/utils";
-import { getQuadrantMode } from "@/components/Chart/utils";
+
+type Dimension = { negLabel: string; posLabel: string };
+
+const MAX_DIMS = 3;
 
 const defaultSettings = {
   name: "",
   isPrivate: false,
   durationHours: 0,
-  xLeft: "",
-  xRight: "",
-  yTop: "",
-  yBottom: "",
+  dimensions: [
+    { negLabel: "", posLabel: "" },
+    { negLabel: "", posLabel: "" },
+  ] as Dimension[],
 };
 
-function CreatePlotPreview({ settings }: { settings: typeof defaultSettings }) {
-  const qm = getQuadrantMode({
-    xLabelLeft: settings.xLeft.trim() || undefined,
-    xLabelRight: settings.xRight.trim() || undefined,
-    yLabelTop: settings.yTop.trim() || undefined,
-    yLabelBottom: settings.yBottom.trim() || undefined,
-  });
-  const vLeft = qm ? `${50 - qm.signX * 44}%` : "50%";
-  const hTop = qm ? `${50 + qm.signY * 44}%` : "50%";
+function CreatePlotPreview({ dims }: { dims: Dimension[] }) {
+  const d0 = dims[0] ?? { negLabel: "", posLabel: "" };
+  const d1 = dims[1] ?? { negLabel: "", posLabel: "" };
 
-  const yTopPos = qm
-    ? { top: "1%", left: vLeft, transform: "translateX(-50%)" }
-    : { top: "1%", left: "50%", transform: "translateX(-50%)" };
-  const yBottomPos = qm
-    ? { bottom: "1%", left: vLeft, transform: "translateX(-50%)" }
-    : { bottom: "1%", left: "50%", transform: "translateX(-50%)" };
-  const xRightPos = qm
-    ? { right: "1%", top: hTop, transform: "translateY(-50%)" }
-    : { right: "1%", top: "50%", transform: "translateY(-50%)" };
-  const xLeftPos = qm
-    ? { left: "1%", top: hTop, transform: "translateY(-50%)" }
-    : { left: "1%", top: "50%", transform: "translateY(-50%)" };
+  if (dims.length === 1) {
+    return (
+      <>
+        <div className="absolute left-[6%] right-[6%] h-[1.5px] bg-[var(--foreground)] top-1/2" />
+        {d0.negLabel.trim() && (
+          <span className="absolute text-xs bg-[var(--background)] px-1 whitespace-nowrap left-[1%] top-1/2 -translate-y-1/2">
+            {d0.negLabel.trim()}
+          </span>
+        )}
+        {d0.posLabel.trim() && (
+          <span className="absolute text-xs bg-[var(--background)] px-1 whitespace-nowrap right-[1%] top-1/2 -translate-y-1/2 text-right">
+            {d0.posLabel.trim()}
+          </span>
+        )}
+      </>
+    );
+  }
+
+  if (dims.length === 3) {
+    const S = 22;
+    const C = 0.866;
+    const axes = [
+      { x1: 50 - S * C, y1: 50 - S * 0.5, x2: 50 + S * C, y2: 50 + S * 0.5 },
+      { x1: 50, y1: 50 + S, x2: 50, y2: 50 - S },
+      { x1: 50 + S * C, y1: 50 - S * 0.5, x2: 50 - S * C, y2: 50 + S * 0.5 },
+    ];
+    const labels = dims.slice(0, 3).flatMap((d, i) => {
+      const ax = [{ x: S * C, y: S * 0.5 }, { x: 0, y: -S }, { x: -S * C, y: S * 0.5 }][i];
+      return [
+        { text: d.posLabel.trim(), x: 50 + ax.x, y: 50 + ax.y },
+        { text: d.negLabel.trim(), x: 50 - ax.x, y: 50 - ax.y },
+      ];
+    });
+    return (
+      <>
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+          {axes.map((a, i) => (
+            <line key={i} x1={a.x1} y1={a.y1} x2={a.x2} y2={a.y2}
+              stroke="var(--foreground)" strokeWidth="0.3" />
+          ))}
+        </svg>
+        {labels.map((l, i) => l.text ? (
+          <span key={i}
+            className="absolute text-xs bg-[var(--background)] px-1 whitespace-nowrap -translate-x-1/2 -translate-y-1/2 text-center opacity-80"
+            style={{ left: `${l.x}%`, top: `${l.y}%` }}
+          >
+            {l.text}
+          </span>
+        ) : null)}
+      </>
+    );
+  }
 
   return (
-    <div className="hidden sm:flex w-52 shrink-0 items-center">
-      <div className="relative w-full aspect-square">
-        <div
-          className="absolute top-[6%] bottom-[6%] w-[1.5px] bg-[var(--foreground)]"
-          style={{ left: vLeft }}
-        />
-        <div
-          className="absolute left-[6%] right-[6%] h-[1.5px] bg-[var(--foreground)]"
-          style={{ top: hTop }}
-        />
-        {settings.yTop.trim() && (
-          <span
-            className="absolute text-center text-xs bg-[var(--background)] px-1 whitespace-nowrap"
-            style={yTopPos}
-          >
-            {settings.yTop.trim()}
-          </span>
-        )}
-        {settings.yBottom.trim() && (
-          <span
-            className="absolute text-center text-xs bg-[var(--background)] px-1 whitespace-nowrap"
-            style={yBottomPos}
-          >
-            {settings.yBottom.trim()}
-          </span>
-        )}
-        {settings.xRight.trim() && (
-          <span
-            className="absolute text-right text-xs bg-[var(--background)] px-1 whitespace-nowrap"
-            style={xRightPos}
-          >
-            {settings.xRight.trim()}
-          </span>
-        )}
-        {settings.xLeft.trim() && (
-          <span
-            className="absolute text-left text-xs bg-[var(--background)] px-1 whitespace-nowrap"
-            style={xLeftPos}
-          >
-            {settings.xLeft.trim()}
-          </span>
-        )}
-      </div>
-    </div>
+    <>
+      <div className="absolute top-[6%] bottom-[6%] w-[1.5px] bg-[var(--foreground)] left-1/2" />
+      <div className="absolute left-[6%] right-[6%] h-[1.5px] bg-[var(--foreground)] top-1/2" />
+      {d1.posLabel.trim() && (
+        <span className="absolute text-center text-xs bg-[var(--background)] px-1 whitespace-nowrap top-[1%] left-1/2 -translate-x-1/2">
+          {d1.posLabel.trim()}
+        </span>
+      )}
+      {d1.negLabel.trim() && (
+        <span className="absolute text-center text-xs bg-[var(--background)] px-1 whitespace-nowrap bottom-[1%] left-1/2 -translate-x-1/2">
+          {d1.negLabel.trim()}
+        </span>
+      )}
+      {d0.posLabel.trim() && (
+        <span className="absolute text-right text-xs bg-[var(--background)] px-1 whitespace-nowrap right-[1%] top-1/2 -translate-y-1/2">
+          {d0.posLabel.trim()}
+        </span>
+      )}
+      {d0.negLabel.trim() && (
+        <span className="absolute text-left text-xs bg-[var(--background)] px-1 whitespace-nowrap left-[1%] top-1/2 -translate-y-1/2">
+          {d0.negLabel.trim()}
+        </span>
+      )}
+    </>
   );
 }
 
@@ -107,20 +124,37 @@ export function CreatePlotModal({
     v: (typeof defaultSettings)[K],
   ) => setSettings((s) => ({ ...s, [k]: v }));
 
-  const hasX = settings.xLeft.trim() || settings.xRight.trim();
-  const hasY = settings.yTop.trim() || settings.yBottom.trim();
-  const canCreate = hasX && hasY;
+  const setDim = (i: number, field: "negLabel" | "posLabel", val: string) => {
+    setSettings((s) => {
+      const dims = [...s.dimensions];
+      dims[i] = { ...dims[i], [field]: val };
+      return { ...s, dimensions: dims };
+    });
+  };
+  const addDim = () => setSettings((s) => ({
+    ...s,
+    dimensions: [...s.dimensions, { negLabel: "", posLabel: "" }],
+  }));
+  const removeDim = (i: number) => setSettings((s) => ({
+    ...s,
+    dimensions: s.dimensions.filter((_, j) => j !== i),
+  }));
+
+  const canCreate = settings.dimensions.length >= 1 &&
+    settings.dimensions.length <= MAX_DIMS &&
+    settings.dimensions[0] && (settings.dimensions[0].negLabel.trim() || settings.dimensions[0].posLabel.trim());
 
   const handleCreate = async () => {
     if (!canCreate) return;
+    const dims = settings.dimensions.map((d) => ({
+      negLabel: d.negLabel.trim(),
+      posLabel: d.posLabel.trim(),
+    }));
     const id = await createComparison({
       name: settings.name.trim() || undefined,
       private: settings.isPrivate || undefined,
       durationHours: settings.durationHours || undefined,
-      xLabelLeft: settings.xLeft.trim() || undefined,
-      xLabelRight: settings.xRight.trim() || undefined,
-      yLabelTop: settings.yTop.trim() || undefined,
-      yLabelBottom: settings.yBottom.trim() || undefined,
+      dimensions: dims,
     });
     router.push(`/compare/${id}`);
     setSettings(defaultSettings);
@@ -143,7 +177,7 @@ export function CreatePlotModal({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="flex w-full m-5 max-w-3xl rounded-xl border border-[var(--foreground)] bg-[var(--background)] flex-col md:flex-row  items-center"
+            className="flex w-full m-5 rounded-xl border border-[var(--foreground)] bg-[var(--background)] flex-col md:flex-row items-center max-w-"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-1 flex-col gap-3 md:border-r md:border-b-0 border-b p-5 w-full">
@@ -155,33 +189,43 @@ export function CreatePlotModal({
                 autoFocus
                 className="h-9 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
               />
-              <div className="flex gap-2">
-                <input
-                  value={settings.xLeft}
-                  onChange={(e) => set("xLeft", e.target.value)}
-                  placeholder="← left"
-                  className="h-9 flex-1 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
-                />
-                <input
-                  value={settings.xRight}
-                  onChange={(e) => set("xRight", e.target.value)}
-                  placeholder="right →"
-                  className="h-9 flex-1 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
-                />
-              </div>
-              <div className="flex gap-2">
-                <input
-                  value={settings.yTop}
-                  onChange={(e) => set("yTop", e.target.value)}
-                  placeholder="↑ top"
-                  className="h-9 flex-1 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
-                />
-                <input
-                  value={settings.yBottom}
-                  onChange={(e) => set("yBottom", e.target.value)}
-                  placeholder="bottom ↓"
-                  className="h-9 flex-1 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
-                />
+              <div className="flex flex-col gap-2">
+                {settings.dimensions.map((dim, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="opacity-40 w-4 shrink-0">{i === 0 ? "x" : i === 1 ? "y" : "z"[0]}</span>
+                    <input
+                      value={dim.negLabel}
+                      onChange={(e) => setDim(i, "negLabel", e.target.value)}
+                      placeholder={`← ${i === 0 ? "left" : i === 1 ? "bottom" : "neg"}`}
+                      className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                    />
+                    <span className="opacity-30">↔</span>
+                    <input
+                      value={dim.posLabel}
+                      onChange={(e) => setDim(i, "posLabel", e.target.value)}
+                      placeholder={`${i === 0 ? "right" : i === 1 ? "top" : "pos"} →`}
+                      className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                    />
+                    {settings.dimensions.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeDim(i)}
+                        className="opacity-30 hover:opacity-100 shrink-0 h-9 w-9 flex items-center justify-center"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {settings.dimensions.length < MAX_DIMS && (
+                  <button
+                    type="button"
+                    onClick={addDim}
+                    className="text-left opacity-40 hover:opacity-100 transition-opacity"
+                  >
+                    + Add dimension ({settings.dimensions.length}/{MAX_DIMS})
+                  </button>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <span>Visibility</span>
@@ -231,8 +275,10 @@ export function CreatePlotModal({
               </div>
             </div>
 
-            <div className="p-5 flex flex-col h-80 max-w-80 md:flex-1">
-              <CreatePlotPreview settings={settings} />
+            <div className="flex flex-col md:flex-1 justify-center items-center">
+              <div className="relative aspect-square w-80">
+                <CreatePlotPreview dims={settings.dimensions} />
+              </div>
             </div>
           </motion.div>
         </motion.div>

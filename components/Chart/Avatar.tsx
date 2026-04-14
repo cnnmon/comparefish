@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { nameToColor, type QuadrantMode } from "./utils";
+import { nameToColor, ISO_AXES as ISO_AX, type QuadrantMode, type Dimension } from "./utils";
 import Image from "next/image";
 
 export function Avatar({
@@ -174,7 +174,13 @@ export function Quadrants({
   );
 }
 
-export function Axes({ quadrantMode }: { quadrantMode?: QuadrantMode | null }) {
+export function Axes({ quadrantMode, dimCount = 2, activePair }: { quadrantMode?: QuadrantMode | null; dimCount?: number; activePair?: [number, number] }) {
+  if (dimCount === 3) return <IsoAxes activePair={activePair} />;
+  if (dimCount === 1) {
+    return (
+      <div className="absolute top-1/2 left-[6%] right-[6%] h-[1.5px] bg-[var(--foreground)]" />
+    );
+  }
   if (quadrantMode) {
     const vLeft = `${50 - quadrantMode.signX * 44}%`;
     const hTop = `${50 + quadrantMode.signY * 44}%`;
@@ -199,7 +205,61 @@ export function Axes({ quadrantMode }: { quadrantMode?: QuadrantMode | null }) {
   );
 }
 
-export function AxisLabels({ labels, quadrantMode }: { labels: (string | undefined)[]; quadrantMode?: QuadrantMode | null }) {
+function IsoAxes({ activePair }: { activePair?: [number, number] }) {
+  const S = 36;
+  const COS = 0.866;
+  const axes = [
+    { x1: 50 - S * COS, y1: 50 - S * 0.5, x2: 50 + S * COS, y2: 50 + S * 0.5 },
+    { x1: 50, y1: 50 + S, x2: 50, y2: 50 - S },
+    { x1: 50 + S * COS, y1: 50 - S * 0.5, x2: 50 - S * COS, y2: 50 + S * 0.5 },
+  ];
+  return (
+    <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+      {axes.map((a, i) => {
+        const isActive = !activePair || activePair.includes(i);
+        return (
+          <line
+            key={i}
+            x1={a.x1} y1={a.y1} x2={a.x2} y2={a.y2}
+            stroke="var(--foreground)"
+            strokeWidth={isActive ? "0.5" : "0.2"}
+            opacity={isActive ? 1 : 0.25}
+            style={{ transition: "opacity 0.2s, stroke-width 0.2s" }}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+export function AxisLabels({
+  labels, quadrantMode, dimCount = 2, dimensions, activePair,
+}: {
+  labels: (string | undefined)[];
+  quadrantMode?: QuadrantMode | null;
+  dimCount?: number;
+  dimensions?: Dimension[];
+  activePair?: [number, number];
+}) {
+  if (dimCount === 3 && dimensions) return <IsoAxisLabels dimensions={dimensions} activePair={activePair} />;
+
+  if (dimCount === 1) {
+    return (
+      <>
+        {labels[3] && (
+          <span className="absolute left-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2 whitespace-nowrap">
+            {labels[3]}
+          </span>
+        )}
+        {labels[2] && (
+          <span className="absolute right-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2 whitespace-nowrap text-right">
+            {labels[2]}
+          </span>
+        )}
+      </>
+    );
+  }
+
   if (quadrantMode) {
     const { signX, signY } = quadrantMode;
     const vAxisLeft = `${50 - signX * 44}%`;
@@ -246,6 +306,38 @@ export function AxisLabels({ labels, quadrantMode }: { labels: (string | undefin
             {label}
           </span>
         ) : null;
+      })}
+    </>
+  );
+}
+
+function IsoAxisLabels({ dimensions, activePair }: { dimensions: Dimension[]; activePair?: [number, number] }) {
+  const endpoints = dimensions.slice(0, 3).flatMap((dim, i) => {
+    const ax = ISO_AX[i];
+    return [
+      { label: dim.posLabel, left: 50 + ax.x, top: 50 + ax.y, dimIdx: i },
+      { label: dim.negLabel, left: 50 - ax.x, top: 50 - ax.y, dimIdx: i },
+    ];
+  });
+  return (
+    <>
+      {endpoints.map((ep, idx) => {
+        if (!ep.label) return null;
+        const isActive = !activePair || activePair.includes(ep.dimIdx);
+        return (
+          <span
+            key={idx}
+            className="absolute bg-[var(--background)] px-1 whitespace-nowrap -translate-x-1/2 -translate-y-1/2 text-center"
+            style={{
+              left: `${ep.left}%`,
+              top: `${ep.top}%`,
+              opacity: isActive ? 0.9 : 0.25,
+              transition: "opacity 0.2s",
+            }}
+          >
+            {ep.label}
+          </span>
+        );
       })}
     </>
   );

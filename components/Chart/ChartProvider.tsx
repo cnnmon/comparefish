@@ -11,7 +11,10 @@ import { useMutation, useQuery, useConvexAuth } from "convex/react";
 import { useLoginModal } from "../LoginModal";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
-import { getQuadrantMode, type Point, type PlacedPoint, type Fix, type QuadrantMode } from "./utils";
+import {
+  getQuadrantMode, getDimensions, getDimensionPairs, projectPoint, toPos3D,
+  type Point, type PlacedPoint, type Fix, type QuadrantMode, type Dimension,
+} from "./utils";
 import {
   useChartPlacement,
   type ChartPlacementState,
@@ -54,6 +57,14 @@ type ChartContextValue = {
   onDeleteFix: (fixId: Id<"fixes">) => void;
   showAllFixes: boolean;
   toggleShowAllFixes: () => void;
+  dimensions: Dimension[];
+  dimCount: number;
+  dimensionPairs: [number, number][];
+  activePair: [number, number];
+  viewIndex: number;
+  setViewIndex: (i: number) => void;
+  totalViews: number;
+  flat: boolean;
 } & ChartPlacementState;
 
 const ChartContext = createContext<ChartContextValue | null>(null);
@@ -85,41 +96,78 @@ export function ChartProvider({
   const submitFix = useMutation(api.fixes.submit);
   const deleteFix = useMutation(api.fixes.remove);
 
+  const dims = comparison ? getDimensions(comparison) : [];
+  const dimPairs = getDimensionPairs(dims.length);
+  const dimCount = dims.length;
+  const is3D = dimCount === 3;
+  const totalViews = is3D ? 1 + dimPairs.length : Math.max(dimPairs.length, 1);
+  const [viewIndex, setViewIndex] = useState(0);
+  const flat = is3D ? viewIndex > 0 : true;
+  const activePairIndex = is3D ? Math.max(0, viewIndex - 1) : viewIndex;
+  const activePair = dimPairs[activePairIndex] ?? [0, 1];
+  const [dimX, dimY] = activePair;
+
   const onPlace = useCallback(
-    (x: number, y: number) => void submitPlacement({ comparisonId, x, y }),
-    [submitPlacement, comparisonId],
+    (x: number, y: number) =>
+      void submitPlacement({ comparisonId, x, y, dimX, dimY }),
+    [submitPlacement, comparisonId, dimX, dimY],
   );
   const onFix = useCallback(
     (targetUserId: Id<"users">, x: number, y: number) =>
-      void submitFix({ targetUserId, comparisonId, x, y }),
-    [submitFix, comparisonId],
+      void submitFix({ targetUserId, comparisonId, x, y, dimX, dimY }),
+    [submitFix, comparisonId, dimX, dimY],
   );
   const onDeleteFix = useCallback(
     (fixId: Id<"fixes">) => void deleteFix({ fixId }),
     [deleteFix],
   );
 
+  // Derive labels from the active dimension pair
+  const xDim = dims[dimX];
+  const yDim = dims[dimY];
   const labels = {
-    xLabelLeft: comparison?.xLabelLeft,
-    xLabelRight: comparison?.xLabelRight,
-    yLabelTop: comparison?.yLabelTop,
-    yLabelBottom: comparison?.yLabelBottom,
+    xLabelLeft: xDim?.negLabel || comparison?.xLabelLeft,
+    xLabelRight: xDim?.posLabel || comparison?.xLabelRight,
+    yLabelTop: yDim?.posLabel || comparison?.yLabelTop,
+    yLabelBottom: yDim?.negLabel || comparison?.yLabelBottom,
   };
   const quadrantMode = getQuadrantMode(labels);
 
-  const myPlacement: Point | null = mine ? { x: mine.x, y: mine.y } : null;
-  const resolvedPlacements = allPlacements ?? [];
-  const resolvedFixes = fixes ?? [];
+  const fixedDimIdx = dimCount === 3
+    ? [0, 1, 2].find((i) => i !== dimX && i !== dimY) ?? 2
+    : -1;
+
+  // Project placements and fixes to the active dimension pair
+  const myPlacement: Point | null = mine
+    ? projectPoint(mine.values, mine.x, mine.y, dimX, dimY)
+    : null;
+  const myValues: number[] | null = mine
+    ? (mine.values ?? [mine.x, mine.y])
+    : null;
+
+  const resolvedPlacements: PlacedPoint[] = (allPlacements ?? []).map((p) => {
+    const proj = projectPoint(p.values, p.x, p.y, dimX, dimY);
+    return { ...p, x: proj.x, y: proj.y };
+  });
+
+  const resolvedFixes: Fix[] = (fixes ?? []).map((f) => {
+    const proj = projectPoint(f.values, f.x, f.y, dimX, dimY);
+    return { ...f, x: proj.x, y: proj.y };
+  });
 
   const placement = useChartPlacement({
     myPlacement,
+    myValues,
     allPlacements: resolvedPlacements,
     fixes: resolvedFixes,
     onPlace,
     onFix,
-    onDeleteFix,
     quadrantMode,
     requireAuth: isAuthenticated ? undefined : requireAuth,
+    dimCount,
+    activePair,
+    fixedDimIdx,
+    flat,
   });
 
   const value: ChartContextValue = {
@@ -138,6 +186,14 @@ export function ChartProvider({
     onDeleteFix,
     showAllFixes,
     toggleShowAllFixes,
+    dimensions: dims,
+    dimCount,
+    dimensionPairs: dimPairs,
+    activePair,
+    viewIndex,
+    setViewIndex,
+    totalViews,
+    flat,
     ...placement,
   };
 

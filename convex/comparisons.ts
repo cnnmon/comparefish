@@ -58,19 +58,33 @@ export const create = mutation({
     xLabelRight: v.optional(v.string()),
     yLabelTop: v.optional(v.string()),
     yLabelBottom: v.optional(v.string()),
+    dimensions: v.optional(v.array(v.object({
+      negLabel: v.string(),
+      posLabel: v.string(),
+    }))),
   },
-  handler: async (ctx, { durationHours, ...rest }) => {
+  handler: async (ctx, { durationHours, dimensions, ...rest }) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
-    if (!rest.xLabelLeft && !rest.xLabelRight)
-      throw new Error("At least one x-axis label required");
-    if (!rest.yLabelTop && !rest.yLabelBottom)
-      throw new Error("At least one y-axis label required");
+    if (dimensions && dimensions.length >= 1) {
+      rest.xLabelLeft = dimensions[0].negLabel || undefined;
+      rest.xLabelRight = dimensions[0].posLabel || undefined;
+      if (dimensions.length >= 2) {
+        rest.yLabelBottom = dimensions[1].negLabel || undefined;
+        rest.yLabelTop = dimensions[1].posLabel || undefined;
+      }
+    } else {
+      if (!rest.xLabelLeft && !rest.xLabelRight)
+        throw new Error("At least one x-axis label required");
+      if (!rest.yLabelTop && !rest.yLabelBottom)
+        throw new Error("At least one y-axis label required");
+    }
     const date = new Date().toISOString().slice(0, 10);
     const expiresAt = durationHours
       ? Date.now() + durationHours * 60 * 60 * 1000
       : undefined;
-    return await ctx.db.insert("comparisons", { date, creatorId: userId, expiresAt, ...rest });
+    const dims = dimensions && dimensions.length >= 1 ? dimensions : undefined;
+    return await ctx.db.insert("comparisons", { date, creatorId: userId, expiresAt, dimensions: dims, ...rest });
   },
 });
 

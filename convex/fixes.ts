@@ -8,13 +8,19 @@ export const submit = mutation({
     comparisonId: v.id("comparisons"),
     x: v.number(),
     y: v.number(),
+    dimX: v.optional(v.number()),
+    dimY: v.optional(v.number()),
   },
-  handler: async (ctx, { targetUserId, comparisonId, x, y }) => {
+  handler: async (ctx, { targetUserId, comparisonId, x, y, dimX, dimY }) => {
     const fixerId = await auth.getUserId(ctx);
     if (!fixerId) throw new Error("Not authenticated");
     const comparison = await ctx.db.get(comparisonId);
     if (comparison?.expiresAt && Date.now() >= comparison.expiresAt)
       throw new Error("This comparison is locked");
+
+    const dimCount = comparison?.dimensions?.length ?? 2;
+    const ix = dimX ?? 0;
+    const iy = dimY ?? 1;
 
     const existing = await ctx.db
       .query("fixes")
@@ -27,15 +33,20 @@ export const submit = mutation({
       .unique();
 
     if (existing) {
-      await ctx.db.patch(existing._id, { x, y });
+      const vals = existing.values ? [...existing.values] : Array(dimCount).fill(0);
+      while (vals.length < dimCount) vals.push(0);
+      vals[ix] = x;
+      vals[iy] = y;
+      await ctx.db.patch(existing._id, { x: vals[0], y: vals[1], values: vals });
       return existing._id;
     }
+
+    const vals = Array(dimCount).fill(0);
+    vals[ix] = x;
+    vals[iy] = y;
     return await ctx.db.insert("fixes", {
-      fixerId,
-      targetUserId,
-      comparisonId,
-      x,
-      y,
+      fixerId, targetUserId, comparisonId,
+      x: vals[0], y: vals[1], values: vals,
     });
   },
 });

@@ -20,6 +20,10 @@ const schema = defineSchema({
     xLabelRight: v.optional(v.string()),
     yLabelTop: v.optional(v.string()),
     yLabelBottom: v.optional(v.string()),
+    dimensions: v.optional(v.array(v.object({
+      negLabel: v.string(),
+      posLabel: v.string(),
+    }))),
   }).index("by_date", ["date"]),
 
   placements: defineTable({
@@ -27,6 +31,7 @@ const schema = defineSchema({
     comparisonId: v.id("comparisons"),
     x: v.number(),
     y: v.number(),
+    values: v.optional(v.array(v.number())),
   })
     .index("by_comparison", ["comparisonId"])
     .index("by_user_comparison", ["userId", "comparisonId"]),
@@ -37,6 +42,7 @@ const schema = defineSchema({
     comparisonId: v.id("comparisons"),
     x: v.number(),
     y: v.number(),
+    values: v.optional(v.array(v.number())),
   })
     .index("by_comparison", ["comparisonId"])
     .index("by_fixer_comparison", ["fixerId", "comparisonId"])

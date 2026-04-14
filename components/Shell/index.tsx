@@ -48,7 +48,7 @@ export default function Shell({
   const locked = chart?.locked ?? false;
   const countdown = chart?.countdown ?? null;
   const fixTarget = chart?.fixTarget ?? null;
-  const editingSelf = chart?.editingSelf ?? false;
+  const draggingSelf = chart?.draggingSelf ?? false;
   const myPlacement = chart?.myPlacement ?? null;
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function Shell({
   return (
     <div className="flex flex-col min-h-screen items-center justify-center p-4">
       <div className="flex flex-col w-full absolute top-0 p-4">
-        <div className="flex w-full md:items-center justify-between md:flex-row flex-col md:gap-2">
+        <div className="flex justify-between w-full h-full items-start">
           {comparison ? (<div className="flex flex-1 flex-col md:flex-row md:gap-2">
             <h1
               className="text-3xl font-semibold tracking-tight cursor-pointer"
@@ -77,16 +77,22 @@ export default function Shell({
               <h1 className="text-3xl font-semibold tracking-tight">comparefish</h1>
               <a
                 onClick={() => setAboutOpen(true)}
-                className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1 w-fit"
+                className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black w-fit"
               >
                 About
+              </a>
+              <a
+                onClick={() => void signOut()}
+                className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black"
+              >
+                Logout
               </a>
             </div>
           )}
 
           <div className="flex items-center gap-3 justify-between">
             {isAuthenticated && user && (
-              <div className="flex gap-4">
+              <div className="flex gap-2 items-center">
                 <p className="text-sm">
                   {getUserName({
                     id: user._id ?? "unknown",
@@ -102,9 +108,9 @@ export default function Shell({
                       }) ?? ""
                     }
                     alt={user.name || ""}
-                    width={32}
-                    height={32}
-                    className="rounded-full object-cover transition-opacity hover:opacity-80 cursor-pointer scale-180"
+                    width={40}
+                    height={40}
+                    className="bg-[#85D45A6D] rounded-lg object-cover transition-opacity hover:opacity-80 cursor-pointer h-8"
                     onClick={() => setPickerOpen(!pickerOpen)}
                   />
                   <AvatarPicker
@@ -112,14 +118,6 @@ export default function Shell({
                     onClose={() => setPickerOpen(false)}
                     current={resolveAvatar(user.name, user.avatar)}
                   />
-                  <p>
-                    <a
-                      onClick={() => void signOut()}
-                      className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
-                    >
-                      logout
-                    </a>
-                  </p>
                 </div>
               </div>
             )}
@@ -133,44 +131,11 @@ export default function Shell({
                   <p>
                     <span>This plot is locked{countdown ? ` (${countdown})` : ""}.</span>
                   </p>
-                ) : fixTarget ? (
-                  <p className="text-[var(--highlight)]!">
-                    <span>
-                      Fixing <strong>{fixTarget.name}</strong>
-                    </span>
-                    <span>
-                      {" "}
-                      — click to place where you think they should be.
-                    </span>
-                  </p>
-                ) : editingSelf ? (
-                  <p>Click to place yourself.</p>
                 ) : (
-                  <p>
-                    {!isAuthenticated ? (
-                      <>
-                        <a
-                          className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
-                          onClick={() => requireAuth()}
-                        >
-                          Sign in
-                        </a>{" "}
-                        to place yourself.
-                      </>
-                    ) : myPlacement ? (
-                      <>
-                        Click on fish to fix their placements.{" "}
-                        <a
-                          className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
-                          onClick={() => setShareOpen(true)}
-                        >
-                          Share
-                        </a>{" "}
-                        to collect more fish.
-                      </>
-                    ) : (
-                      "Click to place yourself."
-                    )}
+                  <p className="opacity-50">
+                    {chart?.allPlacements?.length
+                      ? `${chart.allPlacements.length} ${chart.allPlacements.length === 1 ? "person" : "people"} placed.`
+                      : "No placements yet."}
                   </p>
                 )}
               </div>

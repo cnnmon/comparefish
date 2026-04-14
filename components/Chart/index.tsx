@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { toPos, resolveImage } from "./utils";
+import { useCallback, useEffect, useRef } from "react";
+import { toPos, toPos3D, resolveImage, type Point } from "./utils";
 import { Avatar, Quadrants, Axes, AxisLabels } from "./Avatar";
 import { useChart } from "./ChartProvider";
 import { motion } from "framer-motion";
@@ -31,9 +31,7 @@ function CursorLabel({
     return () => el.removeEventListener("mousemove", onMove);
   }, [containerRef]);
 
-  if (!label) {
-    return null;
-  }
+  if (!label) return null;
 
   return (
     <div
@@ -64,30 +62,85 @@ export default function Chart() {
     fixPos,
     hoveredUserId,
     activeFixTargetId,
-    existingFix,
-    editingSelf,
-    cancelEditingSelf,
+    draggingSelf,
+    dragRef,
     handlePointerDown,
+    handleTap,
     handlePointerMove,
+    handlePointerUp,
     handlePointerLeave,
-    cancelFix,
-    deleteExistingFix,
     hoveredQuadrant,
     showAllFixes,
     toggleShowAllFixes,
+    dimensions,
+    dimCount,
+    dimensionPairs,
+    activePair,
+    viewIndex,
+    setViewIndex,
+    totalViews,
+    flat,
   } = ctx;
+  const multiDim = totalViews > 1;
+  const use3D = dimCount === 3 && !flat;
   const qm = quadrantMode;
   const myUserId = allPlacements.find((p) => p.isMe)?.userId;
 
+  const sp = (p: Point & { values?: number[] }) =>
+    use3D ? toPos3D(p.values ?? [p.x, p.y, 0]) : toPos(p, qm);
+
+  // Swipe detection for multi-dim rotation (distinguishes swipe from drag/tap)
+  const swipeRef = useRef<{ x: number; y: number; event: React.MouseEvent | React.TouchEvent } | null>(null);
+
+  const wrappedDown = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      const dragStarted = handlePointerDown(e);
+      if (dragStarted) return;
+      if (multiDim) {
+        const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+        const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+        swipeRef.current = { x: clientX, y: clientY, event: e };
+      } else {
+        handleTap(e);
+      }
+    },
+    [multiDim, handlePointerDown, handleTap],
+  );
+
+  const wrappedUp = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      handlePointerUp();
+      if (swipeRef.current) {
+        const clientX = "changedTouches" in e ? e.changedTouches[0].clientX : e.clientX;
+        const clientY = "changedTouches" in e ? e.changedTouches[0].clientY : e.clientY;
+        const dx = clientX - swipeRef.current.x;
+        const dy = clientY - swipeRef.current.y;
+        const origEvent = swipeRef.current.event;
+        swipeRef.current = null;
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+          setViewIndex(
+            dx < 0
+              ? (viewIndex + 1) % totalViews
+              : (viewIndex - 1 + totalViews) % totalViews,
+          );
+        } else {
+          handleTap(origEvent);
+        }
+      }
+      handlePointerLeave();
+    },
+    [handlePointerUp, handlePointerLeave, handleTap, viewIndex, totalViews, setViewIndex],
+  );
+
   const hoverLabel =
-    hoveredUserId && !fixTarget && !editingSelf
+    hoveredUserId && !fixTarget && !draggingSelf && !locked
       ? hoveredUserId === myUserId
-        ? "Re-place yourself"
-        : `Fix ${getUserName({
+        ? "Drag to re-place"
+        : `Drag to fix ${getUserName({
             id: hoveredUserId ?? "unknown",
             name:
               allPlacements.find((p) => p.userId === hoveredUserId)?.name ?? "",
-          })}'s placement`
+          })}`
       : null;
 
   // Users connected to the hovered fish via fixes
@@ -119,21 +172,24 @@ export default function Chart() {
           containerType: "inline-size",
           cursor: locked
             ? "default"
-            : fixTarget || editingSelf || !hasPlaced
-              ? "crosshair"
+            : draggingSelf || fixTarget
+              ? "grabbing"
               : hoveredUserId
-                ? "pointer"
-                : "default",
+                ? "grab"
+                : !hasPlaced
+                  ? "crosshair"
+                  : "default",
         }}
-        onMouseDown={locked ? undefined : handlePointerDown}
+        onMouseDown={locked ? undefined : wrappedDown}
+        onMouseUp={wrappedUp}
         onMouseMove={handlePointerMove}
         onMouseLeave={handlePointerLeave}
-        onTouchStart={locked ? undefined : handlePointerDown}
+        onTouchStart={locked ? undefined : wrappedDown}
+        onTouchEnd={wrappedUp}
         onTouchMove={handlePointerMove}
-        onTouchEnd={handlePointerLeave}
       >
-        <Quadrants active={hoveredQuadrant} labels={labels} quadrantMode={qm} />
-        <Axes quadrantMode={qm} />
+        {!use3D && <Quadrants active={hoveredQuadrant} labels={labels} quadrantMode={qm} />}
+        <Axes quadrantMode={qm} dimCount={use3D ? 3 : Math.min(dimCount, 2)} activePair={activePair} />
         <AxisLabels
           labels={[
             labels.yLabelTop,
@@ -142,6 +198,9 @@ export default function Chart() {
             labels.xLabelLeft,
           ]}
           quadrantMode={qm}
+          dimCount={use3D ? 3 : Math.min(dimCount, 2)}
+          dimensions={dimensions}
+          activePair={activePair}
         />
 
         {displayFixes.length > 0 && (
@@ -167,8 +226,8 @@ export default function Chart() {
                 (p) => p.userId === f.targetUserId,
               );
               if (!origin) return null;
-              const from = origin.isMe && hasPlaced ? myDot : toPos(origin, qm);
-              const to = toPos(f, qm);
+              const from = origin.isMe && hasPlaced ? myDot : sp(origin);
+              const to = sp(f);
               return (
                 <line
                   key={f._id}
@@ -187,7 +246,7 @@ export default function Chart() {
           </svg>
         )}
         {displayFixes.map((f) => {
-          const pos = toPos(f, qm);
+          const pos = sp(f);
           return (
             <Avatar
               key={f._id}
@@ -209,11 +268,9 @@ export default function Chart() {
               status={
                 f.targetUserId === activeFixTargetId
                   ? "fixing"
-                  : editingSelf && f.targetUserId === myUserId
-                    ? undefined
-                    : hoveredUserId === f.targetUserId
-                      ? "hovering"
-                      : "hidden"
+                  : hoveredUserId === f.targetUserId
+                    ? "hovering"
+                    : "hidden"
               }
             />
           );
@@ -222,7 +279,7 @@ export default function Chart() {
         {allPlacements
           .filter((p) => !p.isMe)
           .map((p) => {
-            const pos = toPos(p, qm);
+            const pos = sp(p);
             const isFixingThis = fixTarget?.userId === p.userId;
             return (
               <Avatar
@@ -250,8 +307,8 @@ export default function Chart() {
         {fixTarget &&
           fixPos &&
           (() => {
-            const from = toPos(fixTarget, qm);
-            const to = toPos(fixPos, qm);
+            const from = sp(fixTarget);
+            const to = sp(fixPos);
             return (
               <>
                 <svg
@@ -329,47 +386,54 @@ export default function Chart() {
         transition={{ duration: 0.2, delay: 0.4 }}
       >
         <div className="flex gap-2">
-          {fixTarget && (
-            <>
-              {existingFix && (
-                <button
-                  onClick={deleteExistingFix}
-                  className="h-10 rounded-lg border border-[var(--rust)]! px-5 text-sm font-medium text-[var(--rust)]! transition-colors hover:bg-[var(--rust)]! hover:text-[var(--background)]!"
-                >
-                  Delete fix
-                </button>
-              )}
-              <button
-                onClick={cancelFix}
-                className="h-10 rounded-lg border border-zinc-200 px-5 text-sm font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-              >
-                Exit fix mode
-              </button>
-            </>
-          )}
-          {editingSelf && (
-            <button
-              onClick={cancelEditingSelf}
-              className="h-10 rounded-lg border border-zinc-200 px-5 text-sm font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-            >
-              Exit self-placement
-            </button>
-          )}
-          {!fixTarget && !editingSelf && hasPlaced && (
+          {!fixTarget && !draggingSelf && hasPlaced && !showAllFixes && (
             <button
               onClick={toggleShowAllFixes}
               className="text-xs opacity-40 hover:opacity-100 transition-opacity"
             >
-              {showAllFixes ? "Show only my fixes" : "See all fixes"}
+              See all fixes
             </button>
           )}
         </div>
 
-        {allPlacements.length > 0 && (
-          <p className="text-center text-sm opacity-50">
-            {allPlacements.length}{" "}
-            {allPlacements.length === 1 ? "person" : "people"} placed.
+        {!locked && (
+          <p className="text-center text-sm italic opacity-50">
+            {fixTarget
+              ? `Fixing ${fixTarget.name} — drag to place.`
+              : draggingSelf
+                ? "Drag to re-place yourself."
+                : !hasPlaced
+                  ? "Click to place yourself."
+                  : "Drag fish to fix their placements."}
           </p>
+        )}
+
+        {multiDim && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() =>
+                setViewIndex(
+                  (viewIndex - 1 + totalViews) % totalViews,
+                )
+              }
+              className="opacity-40 hover:opacity-100 transition-opacity"
+            >
+              ←
+            </button>
+            <span className="text-xs opacity-60">
+              {viewIndex === 0 && dimCount === 3 ? "3D" : `(${viewIndex + 1}/${totalViews})`}
+            </span>
+            <button
+              onClick={() =>
+                setViewIndex(
+                  (viewIndex + 1) % totalViews,
+                )
+              }
+              className="opacity-40 hover:opacity-100 transition-opacity"
+            >
+              →
+            </button>
+          </div>
         )}
       </motion.div>
     </div>
