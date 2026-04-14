@@ -126,17 +126,11 @@ export default function Shell({
           <div className="flex w-full items-center gap-2">
             <div className="flex flex-col w-full">
               <div className="italic text-white">
-                {locked ? (
-                  <p>
-                    <span>This plot is locked{countdown ? ` (${countdown})` : ""}.</span>
-                  </p>
-                ) : (
-                  <p className="opacity-50">
-                    {chart?.allPlacements?.length
-                      ? `${chart.allPlacements.length} ${chart.allPlacements.length === 1 ? "person" : "people"} placed.`
-                      : "No placements yet."}
-                  </p>
-                )}
+                <p className="opacity-50">
+                  {chart?.allPlacements?.length
+                    ? `${chart.allPlacements.length} ${chart.allPlacements.length === 1 ? "person" : "people"} placed.`
+                    : "No placements yet."}
+                </p>
               </div>
               <p>
                 <a

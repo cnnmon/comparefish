@@ -50,6 +50,7 @@ export default function Chart() {
   const {
     labels,
     quadrantMode,
+    countdown,
     locked,
     myDot,
     myAvatar,
@@ -396,7 +397,7 @@ export default function Chart() {
           )}
         </div>
 
-        {!locked && (
+        {!locked ? (
           <p className="text-center text-sm italic opacity-50">
             {fixTarget
               ? `Fixing ${fixTarget.name} — drag to place.`
@@ -406,6 +407,8 @@ export default function Chart() {
                   ? "Click to place yourself."
                   : "Drag fish to fix their placements."}
           </p>
+        ) : (
+          <p className="text-center text-sm italic opacity-75">This plot is locked{countdown ? ` (${countdown})` : ""}.</p>
         )}
 
         {multiDim && (
