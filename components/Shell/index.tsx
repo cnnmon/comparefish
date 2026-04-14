@@ -15,6 +15,7 @@ import { useMutation } from "convex/react";
 import { useChart } from "../Chart/ChartProvider";
 import { getUserName } from "../utils";
 import { useLoginModal } from "../LoginModal";
+import { twMerge } from "tailwind-merge";
 
 export default function Shell({
   children,
@@ -51,24 +52,30 @@ export default function Shell({
   useEffect(() => {
     if (shareOpen) setShareUrl(window.location.href);
   }, [shareOpen]);
+
   useEffect(() => {
     if (settingsOpen) setNameDraft(comparison?.name ?? "");
   }, [settingsOpen]);
+
+
   const isMine = comparison?.isMine ?? false;
+  const label = comparison ? formatLabel(comparison) : "";
 
   return (
     <div className="flex flex-col min-h-screen items-center justify-center p-4 pt-32 sm:pt-4">
       <div className="flex flex-col w-full absolute top-0 p-4">
         <div className="flex justify-between w-full h-full items-start">
-          {comparison ? (<div className="flex flex-1 flex-col">
-            <h1
-              className="text-3xl font-semibold tracking-tight cursor-pointer"
-              onClick={() => router.push("/explore")}
-            >
-              {formatLabel(comparison)}
-            </h1>
-            <h2 className="text-3xl!">by {getUserName({ id: comparison.creatorId ?? "", name: comparison.creatorName })}</h2>
-          </div>) : (
+          {comparison ? (
+            <div className={twMerge("flex flex-1 flex-col", label.length < 8 && "flex-row gap-2")}>
+              <h1
+                className="text-3xl font-semibold tracking-tight cursor-pointer"
+                onClick={() => router.push("/explore")}
+              >
+                {label}
+              </h1>
+              <h2 className="text-3xl!">by {getUserName({ id: comparison.creatorId ?? "", name: comparison.creatorName })}</h2>
+            </div>
+          ) : (
             <div className="flex flex-col">
               <h1 className="text-3xl font-semibold tracking-tight">comparefish</h1>
               <a
@@ -93,6 +100,7 @@ export default function Shell({
                   {getUserName({
                     id: user._id ?? "unknown",
                     name: user.name ?? "",
+                    getFirst: true
                   })}
                 </p>
                 <div className="flex gap-4 items-center bg-[#85D45A6D] rounded-lg">
@@ -122,13 +130,6 @@ export default function Shell({
         {comparisonId && (
           <div className="flex w-full items-center gap-2">
             <div className="flex flex-col w-full">
-              <div className="italic text-white">
-                <p className="opacity-50">
-                  {chart?.allPlacements?.length
-                    ? `${chart.allPlacements.length} ${chart.allPlacements.length === 1 ? "person" : "people"} placed.`
-                    : "No placements yet."}
-                </p>
-              </div>
               <p>
                 <a
                   className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"

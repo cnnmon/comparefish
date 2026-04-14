@@ -216,6 +216,7 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
         <Avatar key={p._id} pos={sp(p)}
           image={resolveImage({ name: p.name, avatar: p.avatar })}
           name={p.name} label={p.name}
+          wiggle={hoveredUserId === p.userId && !fixTarget}
           status={
             fixTarget?.userId === p.userId ? undefined
               : hoveredUserId === p.userId ? "hovering"
@@ -244,7 +245,7 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
             </svg>
             <Avatar pos={to}
               image={resolveImage({ name: fixTarget.name, avatar: fixTarget.avatar })}
-              name={fixTarget.name} label={fixNearOrigin ? "Cancel fix?" : "Your fix"} status="fixing"
+              name={fixTarget.name} label="Your fix" status="fixing"
             />
           </>
         );
@@ -254,6 +255,7 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
         <Avatar pos={effectiveMyDot}
           image={resolveImage({ name: myName, avatar: myAvatar })}
           name={myName} label="me"
+          wiggle={hoveredUserId === myUserId && !fixTarget && !draggingSelf}
           status={
             fixTarget?.userId === myUserId ? "fixing"
               : hoveredUserId === myUserId ? "hovering"
@@ -262,6 +264,10 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
           }
         />
       )}
+
+      <CursorLabel containerRef={containerRef} label={
+        fixTarget && fixNearOrigin ? "Cancel fix?" : null
+      } />
     </div>
   );
 }
@@ -362,16 +368,19 @@ export default function Chart() {
     [handlePointerUp, handlePointerLeave, handleTap, viewIndex, totalViews, setViewIndex],
   );
 
-  const hoverLabel =
-    hoveredUserId && !fixTarget && !draggingSelf && !locked
-      ? hoveredUserId === myUserId
+  const hoverLabel = (() => {
+    if (locked) return null;
+    if (fixTarget && fixNearOrigin) return "Cancel fix?";
+    if (hoveredUserId && !fixTarget && !draggingSelf)
+      return hoveredUserId === myUserId
         ? "Drag to re-place"
         : `Drag to fix ${getUserName({
             id: hoveredUserId ?? "unknown",
             name:
               allPlacements.find((p) => p.userId === hoveredUserId)?.name ?? "",
-          })}`
-      : null;
+          })}`;
+    return null;
+  })();
 
   // Users connected to the hovered fish via fixes
   const connectedToHovered = new Set<string>();
@@ -520,6 +529,7 @@ export default function Chart() {
                 })}
                 name={p.name}
                 label={p.name}
+                wiggle={hoveredUserId === p.userId && !fixTarget}
                 status={
                   isFixingThis
                     ? undefined
@@ -576,7 +586,7 @@ export default function Chart() {
                     avatar: fixTarget.avatar,
                   })}
                   name={fixTarget.name}
-                  label={fixNearOrigin ? "Cancel fix?" : "Your fix"}
+                  label="Your fix"
                   status={"fixing"}
                 />
               </>
@@ -592,6 +602,7 @@ export default function Chart() {
             })}
             name={myName}
             label="me"
+            wiggle={hoveredUserId === myUserId && !fixTarget && !draggingSelf}
             status={
               fixTarget?.userId === myUserId
                 ? "fixing"

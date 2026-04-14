@@ -13,6 +13,7 @@ export function Avatar({
   dashed,
   status,
   cursor,
+  wiggle,
 }: {
   pos: {
     left: number;
@@ -25,6 +26,7 @@ export function Avatar({
   dashed?: boolean;
   status?: "fixing" | "hovering" | "hidden" | undefined;
   cursor?: string;
+  wiggle?: boolean;
 }) {
   const [imgFailed, setImgFailed] = useState(false);
   useEffect(() => setImgFailed(false), [image]);
@@ -56,7 +58,7 @@ export function Avatar({
 
   return (
     <div
-      className={`absolute flex flex-col items-center -translate-x-1/2 -translate-y-1/2 select-none${status === "hovering" ? " animate-wiggle" : ""}`}
+      className={`absolute flex flex-col items-center -translate-x-1/2 -translate-y-1/2 select-none${wiggle ? " animate-wiggle" : ""}`}
       style={{
         left: `${left}%`,
         top: `${top}%`,

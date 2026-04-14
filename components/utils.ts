@@ -1,8 +1,9 @@
-export function getUserName({ id, name }: { id: string; name: string }) {
+export function getUserName({ id, name, getFirst }: { id: string; name: string, getFirst?: boolean }) {
   if (!name) {
     return id?.slice(0, 4) ?? "Anonymous";
   }
-  return name;
+  
+  return getFirst ? name.split(" ")[0] : name;
 }
 
 export function formatLabel(p: {
