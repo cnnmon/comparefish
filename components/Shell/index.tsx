@@ -47,9 +47,6 @@ export default function Shell({
   const chart = useChart();
   const locked = chart?.locked ?? false;
   const countdown = chart?.countdown ?? null;
-  const fixTarget = chart?.fixTarget ?? null;
-  const draggingSelf = chart?.draggingSelf ?? false;
-  const myPlacement = chart?.myPlacement ?? null;
 
   useEffect(() => {
     if (shareOpen) setShareUrl(window.location.href);
@@ -215,8 +212,7 @@ export default function Shell({
           >
             <div className="flex flex-col gap-3">
               <p>
-                Place yourself and your friends on any dimensions in a 2D plane, then "fix" their placements.
-                <br /><br />How? Just create a plot, then send the link to whoever you want. They will need to sign in with Google to place themselves. Afterwards, you can click on their placement to enter "fix" mode -- just click somewhere else that feels more right.
+                Create a plot, then send the link to friends to place themselves (they will need to sign in!). Then, drag on their placement to "fix" where they've placed themselves.
               </p>
               <p>
                 Made by{" "}
