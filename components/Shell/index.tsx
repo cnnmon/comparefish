@@ -63,14 +63,13 @@ export default function Shell({
     <div className="flex flex-col min-h-screen items-center justify-center p-4">
       <div className="flex flex-col w-full absolute top-0 p-4">
         <div className="flex justify-between w-full h-full items-start">
-          {comparison ? (<div className="flex flex-1 flex-col md:flex-row md:gap-2">
+          {comparison ? (<div className="flex flex-1 flex-col">
             <h1
               className="text-3xl font-semibold tracking-tight cursor-pointer"
               onClick={() => router.push("/explore")}
             >
               {formatLabel(comparison)}
             </h1>
-            <span className="hidden md:block">{" * "}</span>
             <h2 className="text-3xl!">by {getUserName({ id: comparison.creatorId ?? "", name: comparison.creatorName })}</h2>
           </div>) : (
             <div className="flex flex-col">
