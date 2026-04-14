@@ -72,48 +72,47 @@ export default async function OgImage({
         }}
       >
         {/* Chart axes — centered crosshair */}
-        {dimCount === 3 ? (
-          <>
-            {[0, 60, 120].map((deg) => (
-              <div key={deg} style={{
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                width: 500,
-                height: 2,
-                marginLeft: -250,
-                marginTop: -1,
-                background: FG,
-                opacity: 0.15,
-                transform: `rotate(${deg}deg)`,
-                display: "flex",
-              }} />
-            ))}
-          </>
-        ) : (<>
-          <div style={{
-            position: "absolute",
-            left: "50%",
-            top: "50%",
-            marginLeft: -1,
-            marginTop: -250,
-            width: 2,
-            height: 500,
-            background: FG,
-            display: "flex",
-          }} />
-          <div style={{
-            position: "absolute",
-            left: "50%",
-            top: "50%",
-            marginLeft: -250,
-            marginTop: -1,
-            width: 500,
-            height: 2,
-            background: FG,
-            display: "flex",
-          }} />
-        </>)}
+        <div style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}>
+          {dimCount === 3 ? (
+            <>
+              {[0, 60, 120].map((deg) => (
+                <div key={deg} style={{
+                  position: "absolute",
+                  width: 500,
+                  height: 2,
+                  background: FG,
+                  opacity: 0.15,
+                  transform: `rotate(${deg}deg)`,
+                  display: "flex",
+                }} />
+              ))}
+            </>
+          ) : (<>
+            <div style={{
+              position: "absolute",
+              width: 2,
+              height: 500,
+              background: FG,
+              display: "flex",
+            }} />
+            <div style={{
+              position: "absolute",
+              width: 500,
+              height: 2,
+              background: FG,
+              display: "flex",
+            }} />
+          </>)}
+        </div>
 
         {/* Decorative fish emoji as dots on the chart */}
         {fishPositions.map((f, i) => (
