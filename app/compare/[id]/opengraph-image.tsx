@@ -11,7 +11,7 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 const BG = "#013423";
 const FG = "#f3edb2";
-const FG_DIM = "rgba(243, 237, 178, 0.15)";
+const FG_DIM = "rgba(243, 237, 178, 0.12)";
 const FG_MID = "rgba(243, 237, 178, 0.35)";
 
 export default async function OgImage({
@@ -28,13 +28,19 @@ export default async function OgImage({
     const comparison = await convex.query(api.comparisons.get, { id });
     if (comparison) {
       label = formatLabel(comparison);
-      axes = [
-        comparison.yLabelTop,
-        comparison.yLabelBottom,
-        comparison.xLabelLeft,
-        comparison.xLabelRight,
-      ].filter((s): s is string => Boolean(s));
       dimCount = comparison.dimensions?.length ?? 2;
+      if (dimCount === 3 && comparison.dimensions) {
+        axes = comparison.dimensions
+          .flatMap((d: { posLabel?: string; negLabel?: string }) => [d.posLabel, d.negLabel])
+          .filter((s): s is string => Boolean(s));
+      } else {
+        axes = [
+          comparison.yLabelTop,
+          comparison.yLabelBottom,
+          comparison.xLabelLeft,
+          comparison.xLabelRight,
+        ].filter((s): s is string => Boolean(s));
+      }
     }
   } catch {}
 
@@ -65,45 +71,38 @@ export default async function OgImage({
           overflow: "hidden",
         }}
       >
-        {/* Chart axes decoration */}
-        <div style={{
-          position: "absolute",
-          left: "50%",
-          top: "10%",
-          bottom: "10%",
-          width: 2,
-          background: FG_DIM,
-          display: "flex",
-        }} />
-        <div style={{
-          position: "absolute",
-          top: "50%",
-          left: "10%",
-          right: "10%",
-          height: 2,
-          background: FG_DIM,
-          display: "flex",
-        }} />
-        {dimCount === 3 && (<>
+        {/* Chart axes — centered crosshair */}
+        {dimCount === 3 ? (
+          <div style={{
+            position: "absolute", top: 0, left: 0, width: 1200, height: 630, display: "flex",
+          }}>
+            {[0, 60, 120].map((deg) => (
+              <div key={deg} style={{
+                position: "absolute",
+                left: 350, top: 314,
+                width: 500, height: 2,
+                background: FG,
+                opacity: 0.15,
+                transform: `rotate(${deg}deg)`,
+                transformOrigin: "center center",
+                display: "flex",
+              }} />
+            ))}
+          </div>
+        ) : (<>
           <div style={{
             position: "absolute",
-            left: "10%",
-            top: "10%",
-            width: "80%",
-            height: "80%",
+            left: 599, top: 65,
+            width: 2, height: 500,
+            background: FG,
             display: "flex",
-            borderBottom: `2px solid ${FG_DIM}`,
-            transform: "rotate(30deg)",
           }} />
           <div style={{
             position: "absolute",
-            left: "10%",
-            top: "10%",
-            width: "80%",
-            height: "80%",
+            left: 350, top: 314,
+            width: 500, height: 2,
+            background: FG,
             display: "flex",
-            borderBottom: `2px solid ${FG_DIM}`,
-            transform: "rotate(-30deg)",
           }} />
         </>)}
 
