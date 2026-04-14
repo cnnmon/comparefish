@@ -122,14 +122,6 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
     ? toPos(projectPoint(liveValues, 0, 0, dimX, dimY), qm)
     : myDot;
 
-  // Highlight quadrant based on fish position (live or saved)
-  const fishPoint = liveValues
-    ? projectPoint(liveValues, 0, 0, dimX, dimY)
-    : myPlacement;
-  const fishQuadrant = fishPoint
-    ? (fishPoint.y > 0 ? 0 : 1) * 2 + (fishPoint.x >= 0 ? 1 : 0)
-    : null;
-
   const sp = (p: Point) => toPos(p, qm);
   const mid = `fix-${dimX}-${dimY}`;
 
@@ -170,7 +162,7 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
       onTouchEnd={onUp}
       onTouchMove={handlePointerMove}
     >
-      <Quadrants active={fishQuadrant} labels={axisLabels} quadrantMode={qm} />
+      <Quadrants active={null} labels={axisLabels} quadrantMode={qm} />
       <Axes quadrantMode={qm} dimCount={2} />
       <AxisLabels
         labels={[axisLabels.yLabelTop, axisLabels.yLabelBottom, axisLabels.xLabelRight, axisLabels.xLabelLeft]}
