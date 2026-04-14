@@ -76,7 +76,7 @@ export default function Shell({
               <h1 className="text-3xl font-semibold tracking-tight">comparefish</h1>
               <a
                 onClick={() => setAboutOpen(true)}
-                className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black w-fit"
+                className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black"
               >
                 About
               </a>
