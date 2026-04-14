@@ -65,6 +65,13 @@ type ChartContextValue = {
   setViewIndex: (i: number) => void;
   totalViews: number;
   flat: boolean;
+  comparisonId: Id<"comparisons">;
+  rawMine: { x: number; y: number; values?: number[] } | null;
+  placePair: (args: { x: number; y: number; dimX: number; dimY: number }) => void;
+  fixPair: (args: { targetUserId: Id<"users">; x: number; y: number; dimX: number; dimY: number }) => void;
+  authGate: (() => boolean) | undefined;
+  liveValues: number[] | null;
+  setLiveValues: (v: number[] | null) => void;
 } & ChartPlacementState;
 
 const ChartContext = createContext<ChartContextValue | null>(null);
@@ -122,6 +129,20 @@ export function ChartProvider({
     [deleteFix],
   );
 
+  const placePair = useCallback(
+    ({ x, y, dimX: dx, dimY: dy }: { x: number; y: number; dimX: number; dimY: number }) =>
+      void submitPlacement({ comparisonId, x, y, dimX: dx, dimY: dy }),
+    [submitPlacement, comparisonId],
+  );
+  const fixPair = useCallback(
+    ({ targetUserId, x, y, dimX: dx, dimY: dy }: { targetUserId: Id<"users">; x: number; y: number; dimX: number; dimY: number }) =>
+      void submitFix({ targetUserId, comparisonId, x, y, dimX: dx, dimY: dy }),
+    [submitFix, comparisonId],
+  );
+  const rawMine = mine ? { x: mine.x, y: mine.y, values: mine.values } : null;
+  const authGate = isAuthenticated ? undefined : requireAuth;
+  const [liveValues, setLiveValues] = useState<number[] | null>(null);
+
   // Derive labels from the active dimension pair
   const xDim = dims[dimX];
   const yDim = dims[dimY];
@@ -168,6 +189,7 @@ export function ChartProvider({
     activePair,
     fixedDimIdx,
     flat,
+    onLiveUpdate: setLiveValues,
   });
 
   const value: ChartContextValue = {
@@ -194,6 +216,13 @@ export function ChartProvider({
     setViewIndex,
     totalViews,
     flat,
+    comparisonId,
+    rawMine,
+    placePair,
+    fixPair,
+    authGate,
+    liveValues,
+    setLiveValues,
     ...placement,
   };
 

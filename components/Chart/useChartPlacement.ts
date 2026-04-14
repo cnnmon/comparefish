@@ -17,6 +17,7 @@ export function useChartPlacement({
   activePair = [0, 1] as [number, number],
   fixedDimIdx = -1,
   flat = false,
+  onLiveUpdate,
 }: {
   myPlacement: Point | null;
   myValues: number[] | null;
@@ -30,6 +31,7 @@ export function useChartPlacement({
   activePair?: [number, number];
   fixedDimIdx?: number;
   flat?: boolean;
+  onLiveUpdate?: (values: number[] | null) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<Point>(myPlacement ?? { x: 0, y: 0 });
@@ -49,6 +51,21 @@ export function useChartPlacement({
   fixPosRef.current = fixPos;
   const myPlacementRef = useRef(myPlacement);
   myPlacementRef.current = myPlacement;
+  const myValuesRef = useRef(myValues);
+  myValuesRef.current = myValues;
+  const activePairRef = useRef(activePair);
+  activePairRef.current = activePair;
+  const onLiveUpdateRef = useRef(onLiveUpdate);
+  onLiveUpdateRef.current = onLiveUpdate;
+
+  const broadcastLive = useCallback((p: Point | null) => {
+    if (!onLiveUpdateRef.current) return;
+    if (!p) { onLiveUpdateRef.current(null); return; }
+    const vals = myValuesRef.current ? [...myValuesRef.current] : Array(Math.max(dimCount, 2)).fill(0);
+    vals[activePairRef.current[0]] = p.x;
+    vals[activePairRef.current[1]] = p.y;
+    onLiveUpdateRef.current(vals);
+  }, [dimCount]);
 
   useEffect(() => {
     if (myPlacement) {
@@ -175,6 +192,7 @@ export function useChartPlacement({
         if (p) {
           if (dragRef.current.type === "self") {
             setPos(p);
+            broadcastLive(p);
           } else {
             setFixPos(p);
           }
@@ -194,6 +212,7 @@ export function useChartPlacement({
       const p = posRef.current;
       onPlace(p.x, p.y);
       setDraggingSelf(false);
+      broadcastLive(null);
     } else if (drag.target) {
       const p = fixPosRef.current;
       if (p) onFix(drag.target.userId as Id<"users">, p.x, p.y);
@@ -201,7 +220,7 @@ export function useChartPlacement({
     setFixTarget(null);
     setFixPos(null);
     setHoveredUserId(null);
-  }, [onPlace, onFix]);
+  }, [onPlace, onFix, broadcastLive]);
 
   const handlePointerLeave = useCallback(() => {
     if (dragRef.current) {
@@ -211,10 +230,11 @@ export function useChartPlacement({
       if (mp) setPos(mp);
       setFixTarget(null);
       setFixPos(null);
+      broadcastLive(null);
     }
     setHoveredQuadrant(null);
     setHoveredUserId(null);
-  }, []);
+  }, [broadcastLive]);
 
   const myDot = (() => {
     if (use3D) {

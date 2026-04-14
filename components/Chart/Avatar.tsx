@@ -205,6 +205,87 @@ export function Axes({ quadrantMode, dimCount = 2, activePair }: { quadrantMode?
   );
 }
 
+// 6 half-axis endpoints clockwise from top, used to define sector triangles
+const ISO_SECTOR_ENDPOINTS = (() => {
+  const ax = ISO_AX;
+  return [
+    { x: 50 + ax[1].x, y: 50 + ax[1].y },       // +dim1 (top)
+    { x: 50 - ax[2].x, y: 50 - ax[2].y },        // -dim2 (top-right)
+    { x: 50 + ax[0].x, y: 50 + ax[0].y },        // +dim0 (bottom-right)
+    { x: 50 - ax[1].x, y: 50 - ax[1].y },        // -dim1 (bottom)
+    { x: 50 + ax[2].x, y: 50 + ax[2].y },        // +dim2 (bottom-left)
+    { x: 50 - ax[0].x, y: 50 - ax[0].y },        // -dim0 (top-left)
+  ];
+})();
+
+// Each sector is bounded by two adjacent half-axes; labels come from those halves
+// [dimIndex, positive?] for each of the 6 clockwise half-axes
+const HALF_AXIS_DIM: [number, boolean][] = [
+  [1, true], [2, false], [0, true], [1, false], [2, true], [0, false],
+];
+
+function isoSectorFromValues(values: number[]): number {
+  let sx = 0, sy = 0;
+  for (let i = 0; i < 3; i++) {
+    sx += (values[i] ?? 0) * ISO_AX[i].x;
+    sy += (values[i] ?? 0) * ISO_AX[i].y;
+  }
+  let angle = Math.atan2(sy, sx) + 5 * Math.PI / 6;
+  if (angle < 0) angle += 2 * Math.PI;
+  return Math.floor(angle / (Math.PI / 3)) % 6;
+}
+
+export function IsoQuadrants({
+  values,
+  dimensions,
+}: {
+  values: number[] | null;
+  dimensions?: Dimension[];
+}) {
+  const active = values ? isoSectorFromValues(values) : null;
+  const eps = ISO_SECTOR_ENDPOINTS;
+
+  return (
+    <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+      {eps.map((_, i) => {
+        const next = eps[(i + 1) % 6];
+        const pts = `50,50 ${eps[i].x},${eps[i].y} ${next.x},${next.y}`;
+        return (
+          <polygon
+            key={i}
+            points={pts}
+            fill="var(--foreground)"
+            opacity={active === i ? 0.05 : 0}
+            style={{ transition: "opacity 0.15s" }}
+          />
+        );
+      })}
+      {active !== null && dimensions && (() => {
+        const [dimI, posI] = HALF_AXIS_DIM[active];
+        const [dimJ, posJ] = HALF_AXIS_DIM[(active + 1) % 6];
+        const labelI = posI ? dimensions[dimI]?.posLabel : dimensions[dimI]?.negLabel;
+        const labelJ = posJ ? dimensions[dimJ]?.posLabel : dimensions[dimJ]?.negLabel;
+        const label = [labelI, labelJ].filter(Boolean).join(", ");
+        if (!label) return null;
+        const next = eps[(active + 1) % 6];
+        const cx = (50 + eps[active].x + next.x) / 3;
+        const cy = (50 + eps[active].y + next.y) / 3;
+        return (
+          <text
+            x={cx} y={cy}
+            textAnchor="middle" dominantBaseline="central"
+            fill="var(--foreground)"
+            opacity={0.35}
+            fontSize={3}
+          >
+            {label}
+          </text>
+        );
+      })()}
+    </svg>
+  );
+}
+
 function IsoAxes({ activePair }: { activePair?: [number, number] }) {
   const S = 36;
   const COS = 0.866;

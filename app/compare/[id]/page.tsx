@@ -1,52 +1,50 @@
-"use client";
-
-import { use, useEffect } from "react";
-import { useQuery } from "convex/react";
-import { AnimatePresence, motion } from "framer-motion";
+import type { Metadata } from "next";
+import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../convex/_generated/api";
-import { Id } from "../../../convex/_generated/dataModel";
-import Chart, { ChartProvider } from "@/components/Chart";
-import Shell from "@/components/Shell";
+import ComparisonPage from "./ComparisonPage";
 import { formatLabel } from "@/components/utils";
+import { Id } from "../../../convex/_generated/dataModel";
 
-function ComparisonPage({ comparisonId }: { comparisonId: Id<"comparisons"> }) {
-  const comparison = useQuery(api.comparisons.get, { id: comparisonId });
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
-  useEffect(() => {
-    if (comparison) {
-      document.title = `Comparison: ${formatLabel(comparison)}`;
-    }
-    return () => { document.title = "comparisons"; };
-  }, [comparison]);
-
-  return (
-    <ChartProvider comparisonId={comparisonId}>
-      <Shell comparisonId={comparisonId}>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="flex flex-col items-center gap-4 w-full"
-        >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key="chart"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="flex flex-col items-center gap-4 w-full"
-            >
-              <Chart />
-            </motion.div>
-          </AnimatePresence>
-        </motion.div>
-      </Shell>
-    </ChartProvider>
-  );
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const comparison = await convex.query(api.comparisons.get, { id });
+    if (!comparison) return { title: "comparefish" };
+    const label = formatLabel(comparison);
+    const dims = [
+      comparison.yLabelTop,
+      comparison.yLabelBottom,
+      comparison.xLabelLeft,
+      comparison.xLabelRight,
+    ].filter(Boolean);
+    const description = dims.length
+      ? `Compare: ${dims.join(", ")}`
+      : "compare you and your friends";
+    return {
+      title: `${label} – comparefish`,
+      description,
+      openGraph: {
+        title: label,
+        description,
+        siteName: "comparefish",
+      },
+    };
+  } catch {
+    return { title: "comparefish" };
+  }
 }
 
-export default function Page({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   return <ComparisonPage comparisonId={id as Id<"comparisons">} />;
 }

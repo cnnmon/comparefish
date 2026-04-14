@@ -1,11 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef } from "react";
-import { toPos, toPos3D, resolveImage, type Point } from "./utils";
-import { Avatar, Quadrants, Axes, AxisLabels } from "./Avatar";
+import {
+  toPos, toPos3D, resolveImage, getQuadrantMode, projectPoint,
+  type Point, type PlacedPoint, type Fix, type Dimension,
+} from "./utils";
+import { Avatar, Quadrants, IsoQuadrants, Axes, AxisLabels } from "./Avatar";
 import { useChart } from "./ChartProvider";
+import { useChartPlacement } from "./useChartPlacement";
 import { motion } from "framer-motion";
 import { getUserName } from "../utils";
+import { Id } from "../../convex/_generated/dataModel";
 
 export { ChartProvider } from "./ChartProvider";
 
@@ -40,6 +45,221 @@ function CursorLabel({
       style={{ opacity: label ? 1 : 0, transform: "translateY(-50%)" }}
     >
       {label}
+    </div>
+  );
+}
+
+function MiniChart2D({ pair }: { pair: [number, number] }) {
+  const ctx = useChart();
+  if (!ctx) return null;
+  const {
+    locked, myName, myAvatar,
+    allPlacements, fixes, dimensions,
+    placePair, fixPair, authGate,
+    liveValues, setLiveValues,
+  } = ctx;
+
+  const [dimX, dimY] = pair;
+  const xDim = dimensions[dimX];
+  const yDim = dimensions[dimY];
+  const axisLabels = {
+    xLabelLeft: xDim?.negLabel,
+    xLabelRight: xDim?.posLabel,
+    yLabelTop: yDim?.posLabel,
+    yLabelBottom: yDim?.negLabel,
+  };
+  const qm = getQuadrantMode(axisLabels);
+
+  const myPlacement: Point | null = ctx.rawMine
+    ? projectPoint(ctx.rawMine.values, ctx.rawMine.x, ctx.rawMine.y, dimX, dimY)
+    : null;
+  const myValues = ctx.rawMine?.values ?? (ctx.rawMine ? [ctx.rawMine.x, ctx.rawMine.y] : null);
+
+  const projected = allPlacements.map((p) => {
+    const proj = projectPoint(p.values, p.x, p.y, dimX, dimY);
+    return { ...p, x: proj.x, y: proj.y };
+  });
+  const projectedFixes = fixes.map((f) => {
+    const proj = projectPoint(f.values, f.x, f.y, dimX, dimY);
+    return { ...f, x: proj.x, y: proj.y };
+  });
+
+  const onPlace = useCallback(
+    (x: number, y: number) => placePair({ x, y, dimX, dimY }),
+    [placePair, dimX, dimY],
+  );
+  const onFix = useCallback(
+    (targetUserId: Id<"users">, x: number, y: number) =>
+      fixPair({ targetUserId, x, y, dimX, dimY }),
+    [fixPair, dimX, dimY],
+  );
+
+  const {
+    containerRef, myDot, hasPlaced, fixTarget, fixPos,
+    hoveredUserId, hoveredQuadrant, activeFixTargetId,
+    draggingSelf, handlePointerDown, handleTap,
+    handlePointerMove, handlePointerUp, handlePointerLeave,
+  } = useChartPlacement({
+    myPlacement,
+    myValues,
+    allPlacements: projected,
+    fixes: projectedFixes,
+    onPlace,
+    onFix,
+    quadrantMode: qm,
+    requireAuth: authGate,
+    dimCount: 2,
+    activePair: pair,
+    fixedDimIdx: -1,
+    flat: true,
+    onLiveUpdate: setLiveValues,
+  });
+
+  const myUserId = projected.find((p) => p.isMe)?.userId;
+  const effectiveMyDot = liveValues && !draggingSelf
+    ? toPos(projectPoint(liveValues, 0, 0, dimX, dimY), qm)
+    : myDot;
+
+  // Highlight quadrant based on fish position (live or saved)
+  const fishPoint = liveValues
+    ? projectPoint(liveValues, 0, 0, dimX, dimY)
+    : myPlacement;
+  const fishQuadrant = fishPoint
+    ? (fishPoint.y > 0 ? 0 : 1) * 2 + (fishPoint.x >= 0 ? 1 : 0)
+    : null;
+
+  const sp = (p: Point) => toPos(p, qm);
+  const mid = `fix-${dimX}-${dimY}`;
+
+  const displayFixes = projectedFixes.filter(
+    (f) => !(fixTarget && f.isMine && f.targetUserId === fixTarget.userId),
+  );
+  const fixOpacity = (uid: string) =>
+    activeFixTargetId ? (uid === activeFixTargetId ? 0.7 : 0.15) : 0.4;
+
+  const onDown = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      if (!handlePointerDown(e)) handleTap(e);
+    },
+    [handlePointerDown, handleTap],
+  );
+  const onUp = useCallback(() => {
+    handlePointerUp();
+    handlePointerLeave();
+  }, [handlePointerUp, handlePointerLeave]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full aspect-square touch-none select-none"
+      style={{
+        containerType: "inline-size",
+        cursor: locked ? "default"
+          : draggingSelf || fixTarget ? "grabbing"
+          : hoveredUserId ? "grab"
+          : !hasPlaced ? "crosshair"
+          : "default",
+      }}
+      onMouseDown={locked ? undefined : onDown}
+      onMouseUp={onUp}
+      onMouseMove={handlePointerMove}
+      onMouseLeave={handlePointerLeave}
+      onTouchStart={locked ? undefined : onDown}
+      onTouchEnd={onUp}
+      onTouchMove={handlePointerMove}
+    >
+      <Quadrants active={fishQuadrant} labels={axisLabels} quadrantMode={qm} />
+      <Axes quadrantMode={qm} dimCount={2} />
+      <AxisLabels
+        labels={[axisLabels.yLabelTop, axisLabels.yLabelBottom, axisLabels.xLabelRight, axisLabels.xLabelLeft]}
+        quadrantMode={qm}
+        dimCount={2}
+      />
+
+      {displayFixes.length > 0 && (
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100">
+          <defs>
+            <marker id={mid} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" />
+            </marker>
+          </defs>
+          {displayFixes.map((f) => {
+            const origin = projected.find((p) => p.userId === f.targetUserId);
+            if (!origin) return null;
+            const from = origin.isMe && hasPlaced ? effectiveMyDot : sp(origin);
+            const to = sp(f);
+            return (
+              <line key={f._id} x1={from.left} y1={from.top} x2={to.left} y2={to.top}
+                stroke="#ef4444" strokeWidth="0.3" strokeDasharray="1 0.75"
+                opacity={fixOpacity(f.targetUserId)} markerEnd={`url(#${mid})`}
+              />
+            );
+          })}
+        </svg>
+      )}
+      {displayFixes.map((f) => (
+        <Avatar key={f._id} pos={sp(f)} size={11}
+          image={resolveImage({ name: f.targetName, avatar: f.targetAvatar })}
+          name={f.targetName}
+          label={f.isMine ? "Your fix" : `${getUserName({ id: f.fixerId ?? "unknown", name: f.fixerName })}'s fix`}
+          status={
+            f.targetUserId === activeFixTargetId ? "fixing"
+              : hoveredUserId === f.targetUserId ? "hovering"
+              : "hidden"
+          }
+        />
+      ))}
+
+      {projected.filter((p) => !p.isMe).map((p) => (
+        <Avatar key={p._id} pos={sp(p)}
+          image={resolveImage({ name: p.name, avatar: p.avatar })}
+          name={p.name} label={p.name}
+          status={
+            fixTarget?.userId === p.userId ? undefined
+              : hoveredUserId === p.userId ? "hovering"
+              : hoveredUserId ? "hidden"
+              : undefined
+          }
+        />
+      ))}
+
+      {fixTarget && fixPos && (() => {
+        const from = sp(fixTarget);
+        const to = sp(fixPos);
+        const amid = `fix-active-${dimX}-${dimY}`;
+        return (
+          <>
+            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100">
+              <defs>
+                <marker id={amid} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444" />
+                </marker>
+              </defs>
+              <line x1={from.left} y1={from.top} x2={to.left} y2={to.top}
+                stroke="#ef4444" strokeWidth="0.3" strokeDasharray="1 0.75" opacity="0.5"
+                markerEnd={`url(#${amid})`}
+              />
+            </svg>
+            <Avatar pos={to}
+              image={resolveImage({ name: fixTarget.name, avatar: fixTarget.avatar })}
+              name={fixTarget.name} label="Your fix" status="fixing"
+            />
+          </>
+        );
+      })()}
+
+      {hasPlaced && (
+        <Avatar pos={effectiveMyDot}
+          image={resolveImage({ name: myName, avatar: myAvatar })}
+          name={myName} label="me"
+          status={
+            fixTarget?.userId === myUserId ? "fixing"
+              : hoveredUserId === myUserId ? "hovering"
+              : hoveredUserId ? "hidden"
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 }
@@ -82,10 +302,16 @@ export default function Chart() {
     totalViews,
     flat,
   } = ctx;
-  const multiDim = totalViews > 1;
   const use3D = dimCount === 3 && !flat;
+  const multiDim = totalViews > 1 && !use3D;
   const qm = quadrantMode;
   const myUserId = allPlacements.find((p) => p.isMe)?.userId;
+  const { liveValues } = ctx;
+
+  // When another chart is being dragged, use liveValues for "me" position
+  const effectiveMyDot = liveValues && !draggingSelf
+    ? (use3D ? toPos3D(liveValues) : toPos(projectPoint(liveValues, 0, 0, activePair[0], activePair[1]), qm))
+    : myDot;
 
   const sp = (p: Point & { values?: number[] }) =>
     use3D ? toPos3D(p.values ?? [p.x, p.y, 0]) : toPos(p, qm);
@@ -164,8 +390,7 @@ export default function Chart() {
     (f) => !(fixTarget && f.isMine && f.targetUserId === fixTarget.userId),
   );
 
-  return (
-    <div className="flex w-full flex-col items-center gap-4">
+  const chartEl = (
       <div
         ref={containerRef}
         className="relative w-full aspect-square touch-none select-none"
@@ -227,7 +452,7 @@ export default function Chart() {
                 (p) => p.userId === f.targetUserId,
               );
               if (!origin) return null;
-              const from = origin.isMe && hasPlaced ? myDot : sp(origin);
+              const from = origin.isMe && hasPlaced ? effectiveMyDot : sp(origin);
               const to = sp(f);
               return (
                 <line
@@ -357,7 +582,7 @@ export default function Chart() {
 
         {hasPlaced && (
           <Avatar
-            pos={myDot}
+            pos={effectiveMyDot}
             image={resolveImage({
               name: myName,
               avatar: myAvatar,
@@ -378,6 +603,18 @@ export default function Chart() {
 
         <CursorLabel containerRef={containerRef} label={hoverLabel} />
       </div>
+  );
+
+  return (
+    <div className="flex w-full flex-col items-center gap-4">
+      {chartEl}
+      {use3D && (
+        <div className="grid grid-cols-3 gap-2 w-full">
+          {dimensionPairs.map((pair) => (
+            <MiniChart2D key={pair.join(",")} pair={pair} />
+          ))}
+        </div>
+      )}
 
       <motion.div
         className="absolute bottom-0 p-4 flex flex-col items-center gap-2"
