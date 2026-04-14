@@ -57,7 +57,7 @@ export default function Shell({
   const isMine = comparison?.isMine ?? false;
 
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center p-4">
+    <div className="flex flex-col min-h-screen items-center justify-center p-4 pt-32 sm:pt-4">
       <div className="flex flex-col w-full absolute top-0 p-4">
         <div className="flex justify-between w-full h-full items-start">
           {comparison ? (<div className="flex flex-1 flex-col">

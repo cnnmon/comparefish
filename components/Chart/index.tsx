@@ -609,7 +609,7 @@ export default function Chart() {
     <div className="flex w-full flex-col items-center gap-4">
       {chartEl}
       {use3D && (
-        <div className="grid grid-cols-3 gap-2 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
           {dimensionPairs.map((pair) => (
             <MiniChart2D key={pair.join(",")} pair={pair} />
           ))}
@@ -617,7 +617,7 @@ export default function Chart() {
       )}
 
       <motion.div
-        className="absolute bottom-0 p-4 flex flex-col items-center gap-2"
+        className="p-4 flex flex-col items-center gap-2"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
