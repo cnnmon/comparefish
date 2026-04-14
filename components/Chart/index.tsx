@@ -99,6 +99,7 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
     hoveredUserId, hoveredQuadrant, activeFixTargetId,
     draggingSelf, handlePointerDown, handleTap,
     handlePointerMove, handlePointerUp, handlePointerLeave,
+    fixNearOrigin,
   } = useChartPlacement({
     myPlacement,
     myValues,
@@ -106,6 +107,7 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
     fixes: projectedFixes,
     onPlace,
     onFix,
+    onDeleteFix: ctx.onDeleteFix,
     quadrantMode: qm,
     requireAuth: authGate,
     dimCount: 2,
@@ -242,7 +244,7 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
             </svg>
             <Avatar pos={to}
               image={resolveImage({ name: fixTarget.name, avatar: fixTarget.avatar })}
-              name={fixTarget.name} label="Your fix" status="fixing"
+              name={fixTarget.name} label={fixNearOrigin ? "Cancel fix?" : "Your fix"} status="fixing"
             />
           </>
         );
@@ -291,6 +293,7 @@ export default function Chart() {
     handlePointerUp,
     handlePointerLeave,
     hoveredQuadrant,
+    fixNearOrigin,
     showAllFixes,
     toggleShowAllFixes,
     dimensions,
@@ -573,7 +576,7 @@ export default function Chart() {
                     avatar: fixTarget.avatar,
                   })}
                   name={fixTarget.name}
-                  label="Your fix"
+                  label={fixNearOrigin ? "Cancel fix?" : "Your fix"}
                   status={"fixing"}
                 />
               </>

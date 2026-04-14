@@ -56,7 +56,7 @@ export function Avatar({
 
   return (
     <div
-      className="absolute flex flex-col items-center -translate-x-1/2 -translate-y-1/2 select-none"
+      className={`absolute flex flex-col items-center -translate-x-1/2 -translate-y-1/2 select-none${status === "hovering" ? " animate-wiggle" : ""}`}
       style={{
         left: `${left}%`,
         top: `${top}%`,

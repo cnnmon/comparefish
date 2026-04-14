@@ -72,3 +72,13 @@ img {
   -o-user-drag: none;
   user-drag: none;
 }
+
+@keyframes wiggle {
+  0%, 100% { rotate: 0deg; }
+  25% { rotate: -8deg; }
+  75% { rotate: 8deg; }
+}
+
+@utility animate-wiggle {
+  animation: wiggle 0.3s ease-in-out infinite;
+}

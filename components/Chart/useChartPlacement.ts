@@ -11,6 +11,7 @@ export function useChartPlacement({
   fixes,
   onPlace,
   onFix,
+  onDeleteFix,
   quadrantMode,
   requireAuth,
   dimCount = 2,
@@ -25,6 +26,7 @@ export function useChartPlacement({
   fixes: Fix[];
   onPlace: (x: number, y: number) => void;
   onFix: (targetUserId: Id<"users">, x: number, y: number) => void;
+  onDeleteFix?: (fixId: Id<"fixes">) => void;
   quadrantMode?: QuadrantMode | null;
   requireAuth?: () => boolean;
   dimCount?: number;
@@ -215,12 +217,24 @@ export function useChartPlacement({
       broadcastLive(null);
     } else if (drag.target) {
       const p = fixPosRef.current;
-      if (p) onFix(drag.target.userId as Id<"users">, p.x, p.y);
+      if (p) {
+        const dx = p.x - drag.target.x;
+        const dy = p.y - drag.target.y;
+        const nearOrigin = Math.sqrt(dx * dx + dy * dy) < 0.12;
+        const existingFix = fixes.find(
+          (f) => f.isMine && f.targetUserId === drag.target!.userId,
+        );
+        if (nearOrigin && existingFix && onDeleteFix) {
+          onDeleteFix(existingFix._id);
+        } else {
+          onFix(drag.target.userId as Id<"users">, p.x, p.y);
+        }
+      }
     }
     setFixTarget(null);
     setFixPos(null);
     setHoveredUserId(null);
-  }, [onPlace, onFix, broadcastLive]);
+  }, [onPlace, onFix, onDeleteFix, fixes, broadcastLive]);
 
   const handlePointerLeave = useCallback(() => {
     if (dragRef.current) {
@@ -247,6 +261,13 @@ export function useChartPlacement({
   })();
   const activeFixTargetId = fixTarget?.userId ?? null;
 
+  const fixNearOrigin = (() => {
+    if (!fixTarget || !fixPos) return false;
+    const dx = fixPos.x - fixTarget.x;
+    const dy = fixPos.y - fixTarget.y;
+    return Math.sqrt(dx * dx + dy * dy) < 0.12;
+  })();
+
   return {
     containerRef,
     myDot,
@@ -263,6 +284,7 @@ export function useChartPlacement({
     handlePointerMove,
     handlePointerUp,
     handlePointerLeave,
+    fixNearOrigin,
   };
 }
 

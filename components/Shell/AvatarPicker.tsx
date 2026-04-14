@@ -55,7 +55,7 @@ export function AvatarPicker({
               alt={key}
               width={100}
               height={100}
-              className="rounded-lg object-cover scale-140 hover:scale-180 transition-all duration-300"
+              className="rounded-lg object-cover scale-140 hover:scale-180 transition-all duration-300 hover:animate-wiggle"
             />
           </button>
         ))}

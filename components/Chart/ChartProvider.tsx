@@ -183,6 +183,7 @@ export function ChartProvider({
     fixes: resolvedFixes,
     onPlace,
     onFix,
+    onDeleteFix,
     quadrantMode,
     requireAuth: isAuthenticated ? undefined : requireAuth,
     dimCount,

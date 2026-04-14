@@ -95,7 +95,7 @@ export default function Shell({
                     name: user.name ?? "",
                   })}
                 </p>
-                <div className="flex gap-4 items-center">
+                <div className="flex gap-4 items-center bg-[#85D45A6D] rounded-lg">
                   <Image
                     src={
                       resolveImage({
@@ -106,7 +106,7 @@ export default function Shell({
                     alt={user.name || ""}
                     width={40}
                     height={40}
-                    className="bg-[#85D45A6D] rounded-lg object-cover transition-opacity hover:opacity-80 cursor-pointer h-8"
+                    className="object-cover transition-opacity hover:opacity-80 hover:animate-wiggle cursor-pointer h-8"
                     onClick={() => setPickerOpen(!pickerOpen)}
                   />
                   <AvatarPicker
