@@ -9,6 +9,11 @@ export const contentType = "image/png";
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
+const BG = "#013423";
+const FG = "#f3edb2";
+const FG_DIM = "rgba(243, 237, 178, 0.15)";
+const FG_MID = "rgba(243, 237, 178, 0.35)";
+
 export default async function OgImage({
   params,
 }: {
@@ -17,6 +22,7 @@ export default async function OgImage({
   const { id } = await params;
   let label = "comparefish";
   let axes: string[] = [];
+  let dimCount = 2;
 
   try {
     const comparison = await convex.query(api.comparisons.get, { id });
@@ -28,8 +34,18 @@ export default async function OgImage({
         comparison.xLabelLeft,
         comparison.xLabelRight,
       ].filter((s): s is string => Boolean(s));
+      dimCount = comparison.dimensions?.length ?? 2;
     }
   } catch {}
+
+  // Decorative fish scattered around the chart
+  const fishPositions = [
+    { x: 280, y: 200, r: -15 },
+    { x: 820, y: 350, r: 20 },
+    { x: 600, y: 180, r: -5 },
+    { x: 400, y: 420, r: 10 },
+    { x: 900, y: 160, r: -25 },
+  ];
 
   return new ImageResponse(
     (
@@ -41,26 +57,93 @@ export default async function OgImage({
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-          color: "white",
+          background: BG,
+          color: FG,
           fontFamily: "sans-serif",
           padding: 60,
+          position: "relative",
+          overflow: "hidden",
         }}
       >
+        {/* Chart axes decoration */}
+        <div style={{
+          position: "absolute",
+          left: "50%",
+          top: "10%",
+          bottom: "10%",
+          width: 2,
+          background: FG_DIM,
+          display: "flex",
+        }} />
+        <div style={{
+          position: "absolute",
+          top: "50%",
+          left: "10%",
+          right: "10%",
+          height: 2,
+          background: FG_DIM,
+          display: "flex",
+        }} />
+        {dimCount === 3 && (<>
+          <div style={{
+            position: "absolute",
+            left: "10%",
+            top: "10%",
+            width: "80%",
+            height: "80%",
+            display: "flex",
+            borderBottom: `2px solid ${FG_DIM}`,
+            transform: "rotate(30deg)",
+          }} />
+          <div style={{
+            position: "absolute",
+            left: "10%",
+            top: "10%",
+            width: "80%",
+            height: "80%",
+            display: "flex",
+            borderBottom: `2px solid ${FG_DIM}`,
+            transform: "rotate(-30deg)",
+          }} />
+        </>)}
+
+        {/* Decorative fish emoji as dots on the chart */}
+        {fishPositions.map((f, i) => (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              left: f.x,
+              top: f.y,
+              fontSize: 40,
+              transform: `rotate(${f.r}deg)`,
+              opacity: 0.25,
+              display: "flex",
+            }}
+          >
+            🐟
+          </div>
+        ))}
+
+        {/* Site name */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 16,
-            marginBottom: 32,
-            opacity: 0.6,
+            gap: 12,
+            marginBottom: 24,
+            opacity: 0.5,
+            fontSize: 28,
+            letterSpacing: 2,
           }}
         >
-          <span style={{ fontSize: 28 }}>comparefish</span>
+          comparefish
         </div>
+
+        {/* Plot title */}
         <div
           style={{
-            fontSize: 56,
+            fontSize: 64,
             fontWeight: 700,
             textAlign: "center",
             lineHeight: 1.2,
@@ -70,12 +153,14 @@ export default async function OgImage({
         >
           {label}
         </div>
+
+        {/* Axis labels */}
         {axes.length > 0 && (
           <div
             style={{
               display: "flex",
-              gap: 16,
-              marginTop: 32,
+              gap: 12,
+              marginTop: 28,
               flexWrap: "wrap",
               justifyContent: "center",
             }}
@@ -84,10 +169,12 @@ export default async function OgImage({
               <div
                 key={a}
                 style={{
-                  background: "rgba(255,255,255,0.1)",
+                  background: FG_DIM,
+                  border: `1px solid ${FG_MID}`,
                   borderRadius: 8,
-                  padding: "8px 20px",
+                  padding: "6px 20px",
                   fontSize: 24,
+                  color: FG,
                 }}
               >
                 {a}
