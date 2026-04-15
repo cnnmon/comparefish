@@ -624,7 +624,7 @@ export default function Chart() {
     <div className="flex w-full flex-col items-center gap-4">
       {chartEl}
       {use3D && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full sm:w-[140%] sm:-mx-[20%]">
           {dimensionPairs.map((pair) => (
             <MiniChart2D key={pair.join(",")} pair={pair} />
           ))}
