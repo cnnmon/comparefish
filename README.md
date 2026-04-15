@@ -11,6 +11,7 @@ make a comparison website!
   - 2D: standard quad chart, single-quadrant mode when only 1 label per axis
   - 3D: isometric projection showing all 3 axes at once (dim0→bottom-right, dim1→up, dim2→bottom-left)
   - for 2D+: ← → arrows / swipe to cycle active placement pair
+  - each dimension can have an optional `description` shown subtly on the chart
   - backward compat: old 2-dim plots use xLabel/yLabel fields, projected to dims[0]/dims[1]
 [x] OG meta tags for link previews (Discord, Slack, etc.)
   - `/compare/[id]` page.tsx is a server component that fetches comparison via `ConvexHttpClient` in `generateMetadata`

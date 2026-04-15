@@ -8,7 +8,8 @@ import { AvatarPicker } from "./AvatarPicker";
 import Image from "next/image";
 import { resolveAvatar, resolveImage } from "../Chart/utils";
 import { formatLabel } from "../utils";
-import { CreatePlotModal } from "@/app/ComparisonPicker";
+import { CreatePlotModal, DimensionEditor, emptyDim, type Dimension } from "@/app/ComparisonPicker";
+import { getDimensions } from "../Chart/utils";
 import { Id } from "@/convex/_generated/dataModel";
 import { Modal } from "../Modal";
 import { useMutation } from "convex/react";
@@ -37,12 +38,14 @@ export default function Shell({
   const renameComparison = useMutation(api.comparisons.rename);
   const removeComparison = useMutation(api.comparisons.remove);
   const setExpiry = useMutation(api.comparisons.setExpiry);
+  const updateDimensions = useMutation(api.comparisons.updateDimensions);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
+  const [dimsDraft, setDimsDraft] = useState<Dimension[]>([]);
   const [copied, setCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const chart = useChart();
@@ -54,8 +57,17 @@ export default function Shell({
   }, [shareOpen]);
 
   useEffect(() => {
-    if (settingsOpen) setNameDraft(comparison?.name ?? "");
-  }, [settingsOpen]);
+    if (settingsOpen && comparison) {
+      setNameDraft(comparison.name ?? "");
+      const dims = getDimensions(comparison);
+      setDimsDraft(dims.map((d) => ({
+        negLabel: d.negLabel,
+        posLabel: d.posLabel,
+        negDescription: d.negDescription ?? "",
+        posDescription: d.posDescription ?? "",
+      })));
+    }
+  }, [settingsOpen, comparison]);
 
 
   const isMine = comparison?.isMine ?? false;
@@ -284,6 +296,26 @@ export default function Shell({
                     className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-[var(--foreground)]"
                   />
                 </div>
+                <DimensionEditor
+                  dimensions={dimsDraft}
+                  onChange={setDimsDraft}
+                  allowAddRemove={false}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const dims = dimsDraft.map((d) => ({
+                      negLabel: d.negLabel.trim(),
+                      posLabel: d.posLabel.trim(),
+                      negDescription: d.negDescription.trim() || undefined,
+                      posDescription: d.posDescription.trim() || undefined,
+                    }));
+                    void updateDimensions({ id: comparisonId, dimensions: dims });
+                    setSettingsOpen(false);
+                  }}
+                >
+                  Save axes
+                </button>
                 <div className="flex items-center justify-between gap-4">
                   <span>Visibility</span>
                   <button

@@ -23,6 +23,8 @@ const schema = defineSchema({
     dimensions: v.optional(v.array(v.object({
       negLabel: v.string(),
       posLabel: v.string(),
+      negDescription: v.optional(v.string()),
+      posDescription: v.optional(v.string()),
     }))),
   }).index("by_date", ["date"]),
 

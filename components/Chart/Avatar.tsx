@@ -35,6 +35,7 @@ export function Avatar({
   const initial = (name || "?")[0].toUpperCase();
   const showImage = image && !imgFailed;
   const color = nameToColor(name);
+  const displaySize = showImage ? size : size * 0.6;
   const { left, top } = pos;
 
   const { opacity, labelColor } = (() => {
@@ -80,8 +81,8 @@ export function Avatar({
       <div
         className="rounded-full flex items-center justify-center shrink-0"
         style={{
-          width: `${size}cqw`,
-          height: `${size}cqw`,
+          width: `${displaySize}cqw`,
+          height: `${displaySize}cqw`,
         }}
       >
         {showImage ? (
@@ -95,10 +96,10 @@ export function Avatar({
           />
         ) : (
           <div
-            className="rounded-full flex items-center justify-center text-md font-medium"
+            className="rounded-full flex items-center justify-center font-medium"
             style={{
-              width: `${size}cqw`,
-              height: `${size}cqw`,
+              width: `${displaySize}cqw`,
+              height: `${displaySize}cqw`,
               background: dashed ? "white" : color,
               color: dashed ? color : "white",
             }}
@@ -329,17 +330,32 @@ export function AxisLabels({
 }) {
   if (dimCount === 3 && dimensions) return <IsoAxisLabels dimensions={dimensions} activePair={activePair} />;
 
+  const [dimX, dimY] = activePair ?? [0, 1];
+  const xDim = dimensions?.[dimX];
+  const yDim = dimensions?.[dimY];
+
+  // labels order: [yTop, yBottom, xRight, xLeft]
+  // descriptions paired with each label position
+  const descs = [
+    yDim?.posDescription,  // yTop
+    yDim?.negDescription,  // yBottom
+    xDim?.posDescription,  // xRight
+    xDim?.negDescription,  // xLeft
+  ];
+
   if (dimCount === 1) {
     return (
       <>
         {labels[3] && (
-          <span className="absolute left-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2 whitespace-nowrap">
-            {labels[3]}
+          <span className="absolute z-10 left-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2 pointer-events-none">
+            <span className="whitespace-nowrap">{labels[3]}</span>
+            {descs[3] && <span className="block opacity-40 truncate max-w-32">{descs[3]}</span>}
           </span>
         )}
         {labels[2] && (
-          <span className="absolute right-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2 whitespace-nowrap text-right">
-            {labels[2]}
+          <span className="absolute z-10 right-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2 text-right pointer-events-none">
+            <span className="whitespace-nowrap">{labels[2]}</span>
+            {descs[2] && <span className="block opacity-40 truncate max-w-32">{descs[2]}</span>}
           </span>
         )}
       </>
@@ -351,23 +367,27 @@ export function AxisLabels({
     const vAxisLeft = `${50 - signX * 44}%`;
     const hAxisTop = `${50 + signY * 44}%`;
     const yLabel = signY === 1 ? labels[0] : labels[1];
+    const yDesc = signY === 1 ? descs[0] : descs[1];
     const xLabel = signX === 1 ? labels[2] : labels[3];
+    const xDesc = signX === 1 ? descs[2] : descs[3];
     return (
       <>
         {yLabel && (
           <span
-            className="absolute bg-[var(--background)] px-2 whitespace-nowrap -translate-x-1/2 text-center"
+            className="absolute z-10 bg-[var(--background)] px-2 -translate-x-1/2 text-center pointer-events-none"
             style={{ [signY === 1 ? "top" : "bottom"]: "1%", left: vAxisLeft }}
           >
-            {yLabel}
+            <span className="whitespace-nowrap">{yLabel}</span>
+            {yDesc && <span className="block opacity-40 truncate max-w-32">{yDesc}</span>}
           </span>
         )}
         {xLabel && (
           <span
-            className="absolute bg-[var(--background)] px-2 whitespace-nowrap -translate-y-1/2"
+            className="absolute z-10 bg-[var(--background)] px-2 -translate-y-1/2 pointer-events-none"
             style={{ [signX === 1 ? "right" : "left"]: "1%", top: hAxisTop }}
           >
-            {xLabel}
+            <span className="whitespace-nowrap">{xLabel}</span>
+            {xDesc && <span className="block opacity-40 truncate max-w-32">{xDesc}</span>}
           </span>
         )}
       </>
@@ -384,12 +404,14 @@ export function AxisLabels({
     <>
       {positions.map((cls, i) => {
         const label = labels[i];
+        const desc = descs[i];
         return label ? (
           <span
             key={cls}
-            className={`absolute bg-[var(--background)] px-2 whitespace-nowrap ${cls}`}
+            className={`absolute z-10 bg-[var(--background)] px-2 pointer-events-none ${cls}`}
           >
-            {label}
+            <span className="whitespace-nowrap">{label}</span>
+            {desc && <span className="block opacity-40 truncate max-w-32">{desc}</span>}
           </span>
         ) : null;
       })}
@@ -401,19 +423,19 @@ function IsoAxisLabels({ dimensions, activePair }: { dimensions: Dimension[]; ac
   const endpoints = dimensions.slice(0, 3).flatMap((dim, i) => {
     const ax = ISO_AX[i];
     return [
-      { label: dim.posLabel, left: 50 + ax.x, top: 50 + ax.y, dimIdx: i },
-      { label: dim.negLabel, left: 50 - ax.x, top: 50 - ax.y, dimIdx: i },
+      { label: dim.posLabel, desc: dim.posDescription, left: 50 + ax.x, top: 50 + ax.y, dimIdx: i },
+      { label: dim.negLabel, desc: dim.negDescription, left: 50 - ax.x, top: 50 - ax.y, dimIdx: i },
     ];
   });
   return (
     <>
       {endpoints.map((ep, idx) => {
-        if (!ep.label) return null;
+        if (!ep.label && !ep.desc) return null;
         const isActive = !activePair || activePair.includes(ep.dimIdx);
         return (
           <span
             key={idx}
-            className="absolute bg-[var(--background)] px-1 whitespace-nowrap -translate-x-1/2 -translate-y-1/2 text-center"
+            className="absolute z-10 bg-[var(--background)] px-1 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none"
             style={{
               left: `${ep.left}%`,
               top: `${ep.top}%`,
@@ -421,7 +443,8 @@ function IsoAxisLabels({ dimensions, activePair }: { dimensions: Dimension[]; ac
               transition: "opacity 0.2s",
             }}
           >
-            {ep.label}
+            {ep.label && <span className="whitespace-nowrap">{ep.label}</span>}
+            {ep.desc && <span className="block opacity-45 truncate max-w-24">{ep.desc}</span>}
           </span>
         );
       })}

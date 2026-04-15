@@ -10,18 +10,97 @@ import { formatTimeLeft } from "@/components/Chart/ChartProvider";
 import { twMerge } from "tailwind-merge";
 import { getUserName, formatLabel } from "@/components/utils";
 
-type Dimension = { negLabel: string; posLabel: string };
+export type Dimension = { negLabel: string; posLabel: string; negDescription: string; posDescription: string };
 
 const MAX_DIMS = 3;
+
+export const emptyDim = (): Dimension => ({ negLabel: "", posLabel: "", negDescription: "", posDescription: "" });
+
+export function DimensionEditor({
+  dimensions,
+  onChange,
+  allowAddRemove = true,
+}: {
+  dimensions: Dimension[];
+  onChange: (dims: Dimension[]) => void;
+  allowAddRemove?: boolean;
+}) {
+  const setDim = (i: number, field: keyof Dimension, val: string) => {
+    const dims = [...dimensions];
+    dims[i] = { ...dims[i], [field]: val };
+    onChange(dims);
+  };
+  const addDim = () => onChange([...dimensions, emptyDim()]);
+  const removeDim = (i: number) => onChange(dimensions.filter((_, j) => j !== i));
+
+  return (
+    <div className="flex flex-col gap-3">
+      {dimensions.map((dim, i) => (
+        <div key={i} className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="opacity-40 w-4 shrink-0">{i === 0 ? "x" : i === 1 ? "y" : "z"[0]}</span>
+            <input
+              value={dim.negLabel}
+              onChange={(e) => setDim(i, "negLabel", e.target.value)}
+              placeholder={`← ${i === 0 ? "left" : i === 1 ? "bottom" : "neg"}`}
+              className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+            />
+            <span className="opacity-30">↔</span>
+            <input
+              value={dim.posLabel}
+              onChange={(e) => setDim(i, "posLabel", e.target.value)}
+              placeholder={`${i === 0 ? "right" : i === 1 ? "top" : "pos"} →`}
+              className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+            />
+            {allowAddRemove && dimensions.length > 1 && (
+              <button
+                type="button"
+                onClick={() => removeDim(i)}
+                className="opacity-30 hover:opacity-100 shrink-0 h-9 w-9 flex items-center justify-center"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-4 shrink-0" />
+            <input
+              value={dim.negDescription}
+              onChange={(e) => setDim(i, "negDescription", e.target.value)}
+              placeholder="← description"
+              className="flex-1 min-w-0 rounded-lg border bg-transparent px-3 py-1 opacity-50 placeholder:text-zinc-400 dark:border-zinc-700"
+            />
+            <span className="w-4 shrink-0" />
+            <input
+              value={dim.posDescription}
+              onChange={(e) => setDim(i, "posDescription", e.target.value)}
+              placeholder="description →"
+              className="flex-1 min-w-0 rounded-lg border bg-transparent px-3 py-1 opacity-50 placeholder:text-zinc-400 dark:border-zinc-700"
+            />
+            {allowAddRemove && dimensions.length > 1 && (
+              <span className="shrink-0 h-9 w-9" />
+            )}
+          </div>
+        </div>
+      ))}
+      {allowAddRemove && dimensions.length < MAX_DIMS && (
+        <button
+          type="button"
+          onClick={addDim}
+          className="text-left opacity-40 hover:opacity-100 transition-opacity"
+        >
+          + Add dimension ({dimensions.length}/{MAX_DIMS})
+        </button>
+      )}
+    </div>
+  );
+}
 
 const defaultSettings = {
   name: "",
   isPrivate: false,
   durationHours: 0,
-  dimensions: [
-    { negLabel: "", posLabel: "" },
-    { negLabel: "", posLabel: "" },
-  ] as Dimension[],
+  dimensions: [emptyDim(), emptyDim()] as Dimension[],
 };
 
 function CreatePlotPreview({ dims }: { dims: Dimension[] }) {
@@ -124,22 +203,6 @@ export function CreatePlotModal({
     v: (typeof defaultSettings)[K],
   ) => setSettings((s) => ({ ...s, [k]: v }));
 
-  const setDim = (i: number, field: "negLabel" | "posLabel", val: string) => {
-    setSettings((s) => {
-      const dims = [...s.dimensions];
-      dims[i] = { ...dims[i], [field]: val };
-      return { ...s, dimensions: dims };
-    });
-  };
-  const addDim = () => setSettings((s) => ({
-    ...s,
-    dimensions: [...s.dimensions, { negLabel: "", posLabel: "" }],
-  }));
-  const removeDim = (i: number) => setSettings((s) => ({
-    ...s,
-    dimensions: s.dimensions.filter((_, j) => j !== i),
-  }));
-
   const canCreate = settings.dimensions.length >= 1 &&
     settings.dimensions.length <= MAX_DIMS &&
     settings.dimensions[0] && (settings.dimensions[0].negLabel.trim() || settings.dimensions[0].posLabel.trim());
@@ -149,6 +212,8 @@ export function CreatePlotModal({
     const dims = settings.dimensions.map((d) => ({
       negLabel: d.negLabel.trim(),
       posLabel: d.posLabel.trim(),
+      negDescription: d.negDescription.trim() || undefined,
+      posDescription: d.posDescription.trim() || undefined,
     }));
     const id = await createComparison({
       name: settings.name.trim() || undefined,
@@ -189,44 +254,10 @@ export function CreatePlotModal({
                 autoFocus
                 className="h-9 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
               />
-              <div className="flex flex-col gap-2">
-                {settings.dimensions.map((dim, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className="opacity-40 w-4 shrink-0">{i === 0 ? "x" : i === 1 ? "y" : "z"[0]}</span>
-                    <input
-                      value={dim.negLabel}
-                      onChange={(e) => setDim(i, "negLabel", e.target.value)}
-                      placeholder={`← ${i === 0 ? "left" : i === 1 ? "bottom" : "neg"}`}
-                      className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
-                    />
-                    <span className="opacity-30">↔</span>
-                    <input
-                      value={dim.posLabel}
-                      onChange={(e) => setDim(i, "posLabel", e.target.value)}
-                      placeholder={`${i === 0 ? "right" : i === 1 ? "top" : "pos"} →`}
-                      className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
-                    />
-                    {settings.dimensions.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeDim(i)}
-                        className="opacity-30 hover:opacity-100 shrink-0 h-9 w-9 flex items-center justify-center"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                ))}
-                {settings.dimensions.length < MAX_DIMS && (
-                  <button
-                    type="button"
-                    onClick={addDim}
-                    className="text-left opacity-40 hover:opacity-100 transition-opacity"
-                  >
-                    + Add dimension ({settings.dimensions.length}/{MAX_DIMS})
-                  </button>
-                )}
-              </div>
+              <DimensionEditor
+                dimensions={settings.dimensions}
+                onChange={(dims) => set("dimensions", dims)}
+              />
               <div className="flex items-center gap-2">
                 <span>Visibility</span>
                 <select

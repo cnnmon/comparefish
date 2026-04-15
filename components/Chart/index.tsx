@@ -169,6 +169,8 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
         labels={[axisLabels.yLabelTop, axisLabels.yLabelBottom, axisLabels.xLabelRight, axisLabels.xLabelLeft]}
         quadrantMode={qm}
         dimCount={2}
+        dimensions={dimensions}
+        activePair={pair}
       />
 
       {displayFixes.length > 0 && (

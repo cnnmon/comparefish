@@ -129,7 +129,7 @@ export function fromScreen3D(
   };
 }
 
-export type Dimension = { negLabel: string; posLabel: string };
+export type Dimension = { negLabel: string; posLabel: string; negDescription?: string; posDescription?: string };
 
 export function getDimensions(comparison: {
   xLabelLeft?: string;

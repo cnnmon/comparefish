@@ -61,6 +61,8 @@ export const create = mutation({
     dimensions: v.optional(v.array(v.object({
       negLabel: v.string(),
       posLabel: v.string(),
+      negDescription: v.optional(v.string()),
+      posDescription: v.optional(v.string()),
     }))),
   },
   handler: async (ctx, { durationHours, dimensions, ...rest }) => {
@@ -127,6 +129,37 @@ export const setExpiry = mutation({
       ? Date.now() + durationHours * 60 * 60 * 1000
       : undefined;
     await ctx.db.patch(id, { expiresAt });
+  },
+});
+
+const dimensionValidator = v.object({
+  negLabel: v.string(),
+  posLabel: v.string(),
+  negDescription: v.optional(v.string()),
+  posDescription: v.optional(v.string()),
+});
+
+export const updateDimensions = mutation({
+  args: {
+    id: v.id("comparisons"),
+    dimensions: v.array(dimensionValidator),
+  },
+  handler: async (ctx, { id, dimensions }) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const comparison = await ctx.db.get(id);
+    if (!comparison) throw new Error("Not found");
+    if (comparison.creatorId !== userId) throw new Error("Not authorized");
+    const patch: Record<string, unknown> = { dimensions };
+    if (dimensions.length >= 1) {
+      patch.xLabelLeft = dimensions[0].negLabel || undefined;
+      patch.xLabelRight = dimensions[0].posLabel || undefined;
+    }
+    if (dimensions.length >= 2) {
+      patch.yLabelBottom = dimensions[1].negLabel || undefined;
+      patch.yLabelTop = dimensions[1].posLabel || undefined;
+    }
+    await ctx.db.patch(id, patch);
   },
 });
 
