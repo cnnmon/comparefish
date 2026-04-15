@@ -12,6 +12,7 @@ import type * as auth from "../auth.js";
 import type * as comparisons from "../comparisons.js";
 import type * as fixes from "../fixes.js";
 import type * as http from "../http.js";
+import type * as moderation from "../moderation.js";
 import type * as placements from "../placements.js";
 import type * as users from "../users.js";
 
@@ -26,6 +27,7 @@ declare const fullApi: ApiFromModules<{
   comparisons: typeof comparisons;
   fixes: typeof fixes;
   http: typeof http;
+  moderation: typeof moderation;
   placements: typeof placements;
   users: typeof users;
 }>;

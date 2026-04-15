@@ -39,6 +39,7 @@ export default function Shell({
   const removeComparison = useMutation(api.comparisons.remove);
   const setExpiry = useMutation(api.comparisons.setExpiry);
   const updateDimensions = useMutation(api.comparisons.updateDimensions);
+  const setDisplayName = useMutation(api.users.setDisplayName);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -46,6 +47,9 @@ export default function Shell({
   const [creating, setCreating] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [dimsDraft, setDimsDraft] = useState<Dimension[]>([]);
+  const [editingName, setEditingName] = useState(false);
+  const [userNameDraft, setUserNameDraft] = useState("");
+  const [nameError, setNameError] = useState("");
   const [copied, setCopied] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const chart = useChart();
@@ -108,13 +112,50 @@ export default function Shell({
           <div className="flex items-center gap-3 justify-between">
             {isAuthenticated && user && (
               <div className="flex gap-2 items-center">
-                <p className="text-sm">
-                  {getUserName({
-                    id: user._id ?? "unknown",
-                    name: user.name ?? "",
-                    getFirst: true
-                  })}
-                </p>
+                {editingName ? (
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="flex items-center gap-1">
+                      <input
+                        autoFocus
+                        value={userNameDraft}
+                        onChange={(e) => { setUserNameDraft(e.target.value); setNameError(""); }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") e.currentTarget.blur();
+                          if (e.key === "Escape") { setEditingName(false); setNameError(""); }
+                        }}
+                        onBlur={async () => {
+                          const trimmed = userNameDraft.trim();
+                          if (!trimmed || trimmed === (user.name ?? "")) {
+                            setEditingName(false);
+                            setNameError("");
+                            return;
+                          }
+                          try {
+                            await setDisplayName({ name: trimmed });
+                            setEditingName(false);
+                            setNameError("");
+                          } catch (e: unknown) {
+                            setNameError(e instanceof Error ? e.message : "Failed to save");
+                          }
+                        }}
+                        className="h-7 w-32 rounded border bg-transparent px-2 text-sm"
+                      />
+                    </div>
+                    {nameError && <span className="text-xs text-red-400">{nameError}</span>}
+                  </div>
+                ) : (
+                  <p
+                    className="text-sm cursor-pointer hover:underline"
+                    onClick={() => { setUserNameDraft(user.name ?? ""); setEditingName(true); setNameError(""); }}
+                    title="Click to edit display name"
+                  >
+                    {getUserName({
+                      id: user._id ?? "unknown",
+                      name: user.name ?? "",
+                      getFirst: true
+                    })}
+                  </p>
+                )}
                 <div className="flex gap-4 items-center bg-[#85D45A6D] rounded-lg">
                   <Image
                     src={

@@ -1,6 +1,14 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { auth } from "./auth";
+import { containsBlockedWord } from "./moderation";
+
+function moderateTexts(...texts: (string | undefined)[]) {
+  for (const t of texts) {
+    if (t && containsBlockedWord(t))
+      throw new Error("Input contains inappropriate language");
+  }
+}
 
 function getDisplayName(user: Record<string, unknown> | null): string {
   if (!user) return "Unknown";
@@ -68,6 +76,10 @@ export const create = mutation({
   handler: async (ctx, { durationHours, dimensions, ...rest }) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
+    moderateTexts(
+      rest.name, rest.xLabelLeft, rest.xLabelRight, rest.yLabelTop, rest.yLabelBottom,
+      ...((dimensions ?? []).flatMap((d) => [d.negLabel, d.posLabel, d.negDescription, d.posDescription])),
+    );
     if (dimensions && dimensions.length >= 1) {
       rest.xLabelLeft = dimensions[0].negLabel || undefined;
       rest.xLabelRight = dimensions[0].posLabel || undefined;
@@ -98,6 +110,7 @@ export const rename = mutation({
     const comparison = await ctx.db.get(id);
     if (!comparison) throw new Error("Not found");
     if (comparison.creatorId !== userId) throw new Error("Not authorized");
+    moderateTexts(name);
     await ctx.db.patch(id, { name: name.trim() || undefined });
   },
 });
@@ -150,6 +163,7 @@ export const updateDimensions = mutation({
     const comparison = await ctx.db.get(id);
     if (!comparison) throw new Error("Not found");
     if (comparison.creatorId !== userId) throw new Error("Not authorized");
+    moderateTexts(...dimensions.flatMap((d) => [d.negLabel, d.posLabel, d.negDescription, d.posDescription]));
     const patch: Record<string, unknown> = { dimensions };
     if (dimensions.length >= 1) {
       patch.xLabelLeft = dimensions[0].negLabel || undefined;
