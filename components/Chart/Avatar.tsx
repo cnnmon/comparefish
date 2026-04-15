@@ -349,13 +349,13 @@ export function AxisLabels({
         {labels[3] && (
           <span className="absolute z-10 left-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2 pointer-events-none">
             <span className="whitespace-nowrap">{labels[3]}</span>
-            {descs[3] && <span className="block opacity-40 truncate max-w-32">{descs[3]}</span>}
+            {descs[3] && <span className="block opacity-40 truncate max-w-32 pointer-events-auto cursor-help" title={descs[3]}>{descs[3]}</span>}
           </span>
         )}
         {labels[2] && (
           <span className="absolute z-10 right-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2 text-right pointer-events-none">
             <span className="whitespace-nowrap">{labels[2]}</span>
-            {descs[2] && <span className="block opacity-40 truncate max-w-32">{descs[2]}</span>}
+            {descs[2] && <span className="block opacity-40 truncate max-w-32 pointer-events-auto cursor-help" title={descs[2]}>{descs[2]}</span>}
           </span>
         )}
       </>
@@ -378,7 +378,7 @@ export function AxisLabels({
             style={{ [signY === 1 ? "top" : "bottom"]: "1%", left: vAxisLeft }}
           >
             <span className="whitespace-nowrap">{yLabel}</span>
-            {yDesc && <span className="block opacity-40 truncate max-w-32">{yDesc}</span>}
+            {yDesc && <span className="block opacity-40 truncate max-w-32 pointer-events-auto cursor-help" title={yDesc}>{yDesc}</span>}
           </span>
         )}
         {xLabel && (
@@ -387,7 +387,7 @@ export function AxisLabels({
             style={{ [signX === 1 ? "right" : "left"]: "1%", top: hAxisTop }}
           >
             <span className="whitespace-nowrap">{xLabel}</span>
-            {xDesc && <span className="block opacity-40 truncate max-w-32">{xDesc}</span>}
+            {xDesc && <span className="block opacity-40 truncate max-w-32 pointer-events-auto cursor-help" title={xDesc}>{xDesc}</span>}
           </span>
         )}
       </>
@@ -411,7 +411,7 @@ export function AxisLabels({
             className={`absolute z-10 bg-[var(--background)] px-2 pointer-events-none ${cls}`}
           >
             <span className="whitespace-nowrap">{label}</span>
-            {desc && <span className="block opacity-40 truncate max-w-32">{desc}</span>}
+            {desc && <span className="block opacity-40 truncate max-w-32 pointer-events-auto cursor-help" title={desc}>{desc}</span>}
           </span>
         ) : null;
       })}
@@ -444,7 +444,7 @@ function IsoAxisLabels({ dimensions, activePair }: { dimensions: Dimension[]; ac
             }}
           >
             {ep.label && <span className="whitespace-nowrap">{ep.label}</span>}
-            {ep.desc && <span className="block opacity-45 truncate max-w-24">{ep.desc}</span>}
+            {ep.desc && <span className="block opacity-45 truncate max-w-24 pointer-events-auto cursor-help" title={ep.desc}>{ep.desc}</span>}
           </span>
         );
       })}
