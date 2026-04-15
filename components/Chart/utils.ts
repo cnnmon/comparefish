@@ -1,7 +1,7 @@
 import { Id } from "@/convex/_generated/dataModel";
 
 export const AVATARS = Array.from(
-  { length: 37 },
+  { length: 38 },
   (_, i) => `fish-${i + 1}`,
 ) as readonly string[];
 

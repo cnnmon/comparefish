@@ -281,6 +281,7 @@ export function CreatePlotModal({
                   className="h-8 rounded-lg border border-zinc-200 bg-transparent px-2 dark:border-zinc-700"
                 >
                   <option value={0}>Never</option>
+                  <option value={0.001}>Immediately</option>
                   <option value={1}>1 hour</option>
                   <option value={6}>6 hours</option>
                   <option value={12}>12 hours</option>

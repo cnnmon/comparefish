@@ -389,6 +389,7 @@ export default function Shell({
                       {locked ? "Unlock / extend..." : "Change..."}
                     </option>
                     <option value={0}>Never lock</option>
+                    <option value={0.001}>Lock immediately</option>
                     <option value={1}>Lock in 1 hour</option>
                     <option value={6}>Lock in 6 hours</option>
                     <option value={12}>Lock in 12 hours</option>
