@@ -87,7 +87,7 @@ export function DimensionEditor({
     <div className="flex flex-col gap-3">
       {onShapeChange && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="opacity-40">Shape</span>
+          <span>Shape</span>
           <div className="flex gap-1 flex-wrap">
             {SHAPES.map((s) => (
               <button
@@ -110,7 +110,7 @@ export function DimensionEditor({
       )}
 
       <div className="gap-2 flex flex-col">
-        <span className="opacity-40">Labels</span>
+        <span>Labels</span>
         {dimensions.map((dim, i) => (
           <div key={i} className="flex flex-col gap-1 mb-2">
             {currentShape === "triangle" ? (
@@ -208,7 +208,7 @@ function CreatePlotPreview({ dims, shape }: { dims: Dimension[]; shape: ChartSha
   }
 
   if (dims.length === 3 && shape === "triangle") {
-    const S = 30;
+    const S = 50;
     const C = 0.866;
     const verts = [
       { x: 50, y: 50 - S },                    // top
@@ -240,7 +240,7 @@ function CreatePlotPreview({ dims, shape }: { dims: Dimension[]; shape: ChartSha
   }
 
   if (dims.length === 3) {
-    const S = 22;
+    const S = 50;
     const C = 0.866;
     const axes = [
       { x1: 50 - S * C, y1: 50 - S * 0.5, x2: 50 + S * C, y2: 50 + S * 0.5 },
