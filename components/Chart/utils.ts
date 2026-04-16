@@ -28,7 +28,7 @@ export function resolveAvatar(
     name?.split("").reduce((acc: number, char: string) => {
       return acc + char.charCodeAt(0);
     }, 0) ?? 0;
-  return `fish-${hash % AVATARS.length}`;
+  return `fish-${(hash % AVATARS.length) + 1}`;
 }
 
 export function resolveImage({
@@ -38,7 +38,6 @@ export function resolveImage({
   name: string | null | undefined;
   avatar: string | null | undefined;
 }): string {
-  console.log(resolveAvatar(name, avatar))
   return avatarUrl(resolveAvatar(name, avatar));
 }
 

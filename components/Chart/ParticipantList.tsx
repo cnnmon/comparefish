@@ -28,19 +28,7 @@ export default function ParticipantList() {
     <div className="flex flex-col gap-1 w-40 bg-[var(--background)]">
       <div className="flex items-center justify-between gap-1">
         <span>{allPlacements.length} fish</span>
-
       </div>
-
-      {allPlacements.length > 5 && (
-        <input
-          type="text"
-          placeholder="Search..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-2 py-1 text-xs rounded bg-transparent"
-        />
-      )}
-
       <div className="flex gap-2 items-center">
         Show
         <button
@@ -59,7 +47,7 @@ export default function ParticipantList() {
         </button>
       </div>
 
-      <div className="flex flex-col gap-0.5 overflow-y-auto min-h-0">
+      <div className="flex flex-col gap-0.5 overflow-y-auto max-h-[40%]">
         {filtered.map((p) => {
           const visible = !hiddenUserIds.has(p.userId);
           const img = resolveImage({ name: p.name, avatar: p.avatar });

@@ -14,11 +14,39 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://comparefish.vercel.app";
+
 export const metadata: Metadata = {
-  title: "comparefish",
-  description: "compare you and your friends",
-  icons: {
-    icon: "/assets/fish/fish-1.png",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "comparefish — compare you and your friends",
+    template: "%s | comparefish",
+  },
+  description:
+    "Create comparison plots, place yourself, and invite friends to fix your placements. Personality charts reimagined as a social game.",
+  keywords: [
+    "comparison chart",
+    "personality chart",
+    "friend comparison",
+    "alignment chart",
+    "comparison plot",
+    "comparefish",
+    "social game",
+  ],
+  icons: { icon: "/assets/fish/fish-1.png" },
+  openGraph: {
+    type: "website",
+    siteName: "comparefish",
+    title: "comparefish — compare you and your friends",
+    description:
+      "Create comparison plots, place yourself, and invite friends to fix your placements.",
+    url: SITE_URL,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "comparefish — compare you and your friends",
+    description:
+      "Create comparison plots, place yourself, and invite friends to fix your placements.",
   },
 };
 

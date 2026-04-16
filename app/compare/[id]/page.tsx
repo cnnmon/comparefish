@@ -17,14 +17,19 @@ export async function generateMetadata({
     const comparison = await convex.query(api.comparisons.get, { id });
     if (!comparison) return { title: "comparefish" };
     const label = formatLabel(comparison);
-    const description = "place yourself and fix your friends";
+    const description = `${label} — place yourself and fix your friends on comparefish`;
     return {
-      title: `compare: ${label}`,
+      title: label,
       description,
       openGraph: {
         title: label,
         description,
         siteName: "comparefish",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: label,
+        description,
       },
     };
   } catch {
