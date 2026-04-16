@@ -21,9 +21,11 @@ import { twMerge } from "tailwind-merge";
 export default function Shell({
   children,
   comparisonId,
+  ready: readyProp,
 }: {
   children: ReactNode;
   comparisonId: Id<"comparisons"> | null;
+  ready?: boolean;
 }) {
   const router = useRouter();
   const { isAuthenticated } = useConvexAuth();
@@ -56,6 +58,12 @@ export default function Shell({
   const chart = useChart();
   const locked = chart?.locked ?? false;
   const countdown = chart?.countdown ?? null;
+  const ready = readyProp ?? (!comparisonId || comparison !== undefined);
+  const [coverVisible, setCoverVisible] = useState(true);
+
+  useEffect(() => {
+    if (ready) setCoverVisible(false);
+  }, [ready]);
 
   useEffect(() => {
     if (shareOpen) setShareUrl(window.location.href);
@@ -81,33 +89,52 @@ export default function Shell({
 
   return (
     <div className="flex flex-col min-h-screen items-center justify-center p-4 pt-32 sm:pt-4">
+      {coverVisible && (
+        <div className="fixed inset-0 z-50 bg-[var(--background)] flex items-center justify-center">
+          <p>loading...</p>
+        </div>
+      )}
+      {!coverVisible && (
+        <div
+          className="fixed inset-0 z-50 bg-[var(--background)] pointer-events-none"
+          style={{ animation: "fade-out 0.4s ease-out forwards" }}
+        />
+      )}
       <div className="flex flex-col w-full absolute top-0 p-4">
         <div className="flex justify-between w-full h-full items-start">
           {comparison ? (
             <div className={twMerge("flex flex-1 flex-col", label.length < 8 && "flex-row gap-2")}>
-              <h1
-                className="text-3xl font-semibold tracking-tight cursor-pointer"
-                onClick={() => router.push("/explore")}
-              >
-                {label}
-              </h1>
+              <div className="flex items-center gap-2">
+                <span
+                  className="cursor-pointer hover:opacity-60 transition-opacity"
+                  onClick={() => router.push("/explore")}
+                  title="Back to explore"
+                >
+                  &larr;
+                </span>
+                <h1 className="text-3xl font-semibold tracking-tight">
+                  {label}
+                </h1>
+              </div>
               <h2 className="text-3xl!">by {getUserName({ id: comparison.creatorId ?? "", name: comparison.creatorName })}</h2>
             </div>
           ) : (
             <div className="flex flex-col">
               <h1 className="text-3xl font-semibold tracking-tight">comparefish</h1>
-              <a
-                onClick={() => setAboutOpen(true)}
-                className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black"
-              >
-                About
-              </a>
-              {isAuthenticated && (<a
-                onClick={signOut}
-                className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black"
-              >
-                Logout
-              </a>)}
+              <div className="flex flex-wrap gap-2">
+                <a
+                  onClick={() => setAboutOpen(true)}
+                  className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black"
+                >
+                  About
+                </a>
+                {isAuthenticated && (<a
+                  onClick={signOut}
+                  className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black"
+                >
+                  Logout
+                </a>)}
+              </div>
             </div>
           )}
 

@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { nameToColor, ISO_AXES as ISO_AX, TRI_VERTS, type QuadrantMode, type Dimension } from "./utils";
+import { ISO_AXES as ISO_AX, TRI_VERTS, type QuadrantMode, type Dimension } from "./utils";
 import Image from "next/image";
 
 export function Avatar({
@@ -10,7 +9,6 @@ export function Avatar({
   image,
   name,
   label,
-  dashed,
   status,
   cursor,
   wiggle,
@@ -21,21 +19,14 @@ export function Avatar({
     top: number;
   };
   size?: number;
-  image: string | null;
+  image: string;
   name: string;
   label?: string;
-  dashed?: boolean;
   status?: "fixing" | "hovering" | "hidden" | undefined;
   cursor?: string;
   wiggle?: boolean;
   dim?: boolean;
 }) {
-  const [imgFailed, setImgFailed] = useState(false);
-  useEffect(() => setImgFailed(false), [image]);
-  const initial = (name || "?")[0].toUpperCase();
-  const showImage = image && !imgFailed;
-  const color = nameToColor(name);
-  const displaySize = showImage ? size : size * 0.6;
   const { left, top } = pos;
 
   const { opacity, labelColor } = (() => {
@@ -58,7 +49,7 @@ export function Avatar({
 
     return { opacity: 1, labelColor: "white" };
   })();
-
+  
   return (
     <div
       className={`absolute flex flex-col items-center -translate-x-1/2 -translate-y-1/2 select-none${dim ? " animate-wiggle-hard" : wiggle ? " animate-wiggle" : ""}`}
@@ -81,32 +72,17 @@ export function Avatar({
       <div
         className="rounded-full flex items-center justify-center shrink-0"
         style={{
-          width: `${displaySize}cqw`,
-          height: `${displaySize}cqw`,
+          width: `${size}cqw`,
+          height: `${size}cqw`,
         }}
       >
-        {showImage ? (
-          <Image
-            width={200}
-            height={200}
-            src={image}
-            alt={name}
-            className="rounded-full object-cover w-full scale-120"
-            onError={() => setImgFailed(true)}
-          />
-        ) : (
-          <div
-            className="rounded-full flex items-center justify-center font-medium"
-            style={{
-              width: `${displaySize}cqw`,
-              height: `${displaySize}cqw`,
-              background: dashed ? "white" : color,
-              color: dashed ? color : "white",
-            }}
-          >
-            {initial}
-          </div>
-        )}
+        <Image
+          width={200}
+          height={200}
+          src={image}
+          alt={name}
+          className="rounded-full object-cover w-full scale-120"
+        />
       </div>
     </div>
   );
@@ -347,15 +323,13 @@ export function AxisLabels({
     return (
       <>
         {labels[3] && (
-          <span className="absolute z-10 left-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2 pointer-events-none">
+          <span className="absolute z-10 left-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2" title={descs[3] || undefined}>
             <span className="whitespace-nowrap">{labels[3]}</span>
-            {descs[3] && <span className="block opacity-40 truncate max-w-32 pointer-events-auto cursor-help" title={descs[3]}>{descs[3]}</span>}
           </span>
         )}
         {labels[2] && (
-          <span className="absolute z-10 right-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2 text-right pointer-events-none">
+          <span className="absolute z-10 right-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2 text-right" title={descs[2] || undefined}>
             <span className="whitespace-nowrap">{labels[2]}</span>
-            {descs[2] && <span className="block opacity-40 truncate max-w-32 pointer-events-auto cursor-help" title={descs[2]}>{descs[2]}</span>}
           </span>
         )}
       </>
@@ -374,20 +348,20 @@ export function AxisLabels({
       <>
         {yLabel && (
           <span
-            className="absolute z-10 bg-[var(--background)] px-2 -translate-x-1/2 text-center pointer-events-none"
+            className="absolute z-10 bg-[var(--background)] px-2 -translate-x-1/2 text-center"
             style={{ [signY === 1 ? "top" : "bottom"]: "1%", left: vAxisLeft }}
+            title={yDesc || undefined}
           >
             <span className="whitespace-nowrap">{yLabel}</span>
-            {yDesc && <span className="block opacity-40 truncate max-w-32 pointer-events-auto cursor-help" title={yDesc}>{yDesc}</span>}
           </span>
         )}
         {xLabel && (
           <span
-            className="absolute z-10 bg-[var(--background)] px-2 -translate-y-1/2 pointer-events-none"
+            className="absolute z-10 bg-[var(--background)] px-2 -translate-y-1/2"
             style={{ [signX === 1 ? "right" : "left"]: "1%", top: hAxisTop }}
+            title={xDesc || undefined}
           >
             <span className="whitespace-nowrap">{xLabel}</span>
-            {xDesc && <span className="block opacity-40 truncate max-w-32 pointer-events-auto cursor-help" title={xDesc}>{xDesc}</span>}
           </span>
         )}
       </>
@@ -408,10 +382,10 @@ export function AxisLabels({
         return label ? (
           <span
             key={cls}
-            className={`absolute z-10 bg-[var(--background)] px-2 pointer-events-none ${cls}`}
+            className={`absolute z-10 bg-[var(--background)] px-2 ${cls}`}
+            title={desc || undefined}
           >
             <span className="whitespace-nowrap">{label}</span>
-            {desc && <span className="block opacity-40 truncate max-w-32 pointer-events-auto cursor-help" title={desc}>{desc}</span>}
           </span>
         ) : null;
       })}
@@ -430,21 +404,21 @@ function IsoAxisLabels({ dimensions, activePair }: { dimensions: Dimension[]; ac
   return (
     <>
       {endpoints.map((ep, idx) => {
-        if (!ep.label && !ep.desc) return null;
+        if (!ep.label) return null;
         const isActive = !activePair || activePair.includes(ep.dimIdx);
         return (
           <span
             key={idx}
-            className="absolute z-10 bg-[var(--background)] px-1 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none"
+            className="absolute z-10 bg-[var(--background)] px-1 -translate-x-1/2 -translate-y-1/2 text-center"
             style={{
               left: `${ep.left}%`,
               top: `${ep.top}%`,
               opacity: isActive ? 0.9 : 0.25,
               transition: "opacity 0.2s",
             }}
+            title={ep.desc || undefined}
           >
-            {ep.label && <span className="whitespace-nowrap">{ep.label}</span>}
-            {ep.desc && <span className="block opacity-45 truncate max-w-24 pointer-events-auto cursor-help" title={ep.desc}>{ep.desc}</span>}
+            <span className="whitespace-nowrap">{ep.label}</span>
           </span>
         );
       })}
@@ -540,19 +514,17 @@ export function TriangleAxisLabels({ dimensions, onHoverDesc }: { dimensions: Di
   return (
     <>
       {labels.map((l, i) => {
-        if (!l.label && !l.desc) return null;
+        if (!l.label) return null;
         return (
           <span
             key={i}
-            className="absolute z-10 bg-[var(--background)] px-1 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none"
+            className="absolute z-10 bg-[var(--background)] px-1 -translate-x-1/2 -translate-y-1/2 text-center"
             style={{ left: `${l.left}%`, top: `${l.top}%` }}
+            title={l.desc || undefined}
+            onMouseEnter={() => l.desc && onHoverDesc?.(l.desc)}
+            onMouseLeave={() => onHoverDesc?.(null)}
           >
-            {l.label && <span className="whitespace-nowrap">{l.label}</span>}
-            {l.desc && <span
-              className="block opacity-45 truncate max-w-24 pointer-events-auto cursor-help"
-              onMouseEnter={() => onHoverDesc?.(l.desc!)}
-              onMouseLeave={() => onHoverDesc?.(null)}
-            >{l.desc}</span>}
+            <span className="whitespace-nowrap">{l.label}</span>
           </span>
         );
       })}

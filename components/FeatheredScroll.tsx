@@ -12,11 +12,12 @@ interface FeatheredScrollProps {
   children: React.ReactNode;
   className?: string;
   direction?: "horizontal" | "vertical";
+  onScroll?: () => void;
 }
 
 const FeatheredScroll = forwardRef<HTMLDivElement, FeatheredScrollProps>(
   function FeatheredScroll(
-    { children, className, direction = "horizontal" },
+    { children, className, direction = "horizontal", onScroll: onScrollProp },
     ref,
   ) {
     const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -58,6 +59,7 @@ const FeatheredScroll = forwardRef<HTMLDivElement, FeatheredScrollProps>(
       };
 
       const onScroll = () => {
+        onScrollProp?.();
         if (rafIdRef.current != null) return;
         rafIdRef.current = requestAnimationFrame(() => {
           rafIdRef.current = null;

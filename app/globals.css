@@ -94,3 +94,8 @@ img {
 @utility animate-wiggle-hard {
   animation: wiggle-hard 0.25s ease-in-out infinite;
 }
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}

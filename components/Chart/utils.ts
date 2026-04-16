@@ -15,7 +15,15 @@ export function resolveAvatar(
   name: string | null | undefined,
   avatar: string | null | undefined,
 ): string {
-  if (avatar) return avatar;
+  if (avatar) {
+    // Accept only avatar = "fish-n" where n is an integer
+    const match = /^fish-(\d+)$/.exec(avatar);
+    if (match) {
+      return avatar;
+    }
+  }
+
+  // If not valid fish-name, generate a hash from the name
   const hash =
     name?.split("").reduce((acc: number, char: string) => {
       return acc + char.charCodeAt(0);
@@ -29,7 +37,8 @@ export function resolveImage({
 }: {
   name: string | null | undefined;
   avatar: string | null | undefined;
-}): string | null {
+}): string {
+  console.log(resolveAvatar(name, avatar))
   return avatarUrl(resolveAvatar(name, avatar));
 }
 

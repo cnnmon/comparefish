@@ -9,7 +9,7 @@ import { Id } from "../../convex/_generated/dataModel";
 import { formatTimeLeft } from "@/components/Chart/ChartProvider";
 import { formatLabel, getUserName } from "@/components/utils";
 import { twMerge } from "tailwind-merge";
-import { toPos, toPos3D, resolveImage, getQuadrantMode, getDimensions, TRI_VERTS, type AxisLabels, type Dimension } from "@/components/Chart/utils";
+import { toPos, toPos3D, resolveImage, getQuadrantMode, getDimensions, type AxisLabels } from "@/components/Chart/utils";
 import { Avatar, Axes, TriangleAxes } from "@/components/Chart/Avatar";
 import Shell from "@/components/Shell";
 import FeatheredScroll from "@/components/FeatheredScroll";
@@ -60,9 +60,8 @@ export default function ExplorePage() {
   const { requireAuth } = useLoginModal();
   const myPlots = comparisons?.filter((c) => user && c.creatorId === user._id);
   const publicPlots = comparisons?.filter((c) => !c.private);
-
   return (
-    <Shell comparisonId={null}>
+    <Shell comparisonId={null} ready={comparisons !== undefined}>
       <CreatePlotModal open={creating} onClose={() => setCreating(false)} />
       <FeatheredScroll
         direction="vertical"

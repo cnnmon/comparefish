@@ -11,6 +11,7 @@ import { useChartPlacement } from "./useChartPlacement";
 import { motion } from "framer-motion";
 import { getUserName } from "../utils";
 import { Id } from "../../convex/_generated/dataModel";
+import ParticipantList from "./ParticipantList";
 
 export { ChartProvider } from "./ChartProvider";
 
@@ -54,10 +55,13 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
   if (!ctx) return null;
   const {
     locked, myName, myAvatar,
-    allPlacements, fixes, dimensions,
+    allPlacements: rawAll, fixes: rawFixes, dimensions,
     placePair, fixPair, authGate,
     liveValues, setLiveValues,
+    hiddenUserIds,
   } = ctx;
+  const allPlacements = rawAll.filter((p) => !hiddenUserIds.has(p.userId));
+  const fixes = rawFixes.filter((f) => !hiddenUserIds.has(f.targetUserId));
 
   const [dimX, dimY] = pair;
   const xDim = dimensions[dimX];
@@ -281,8 +285,8 @@ export default function Chart() {
     myDot,
     myAvatar,
     myName,
-    allPlacements,
-    fixes,
+    allPlacements: rawPlacements,
+    fixes: rawFixes,
     containerRef,
     hasPlaced,
     fixTarget,
@@ -310,7 +314,11 @@ export default function Chart() {
     totalViews,
     flat,
     shape,
+    hiddenUserIds,
   } = ctx;
+
+  const allPlacements = rawPlacements.filter((p) => !hiddenUserIds.has(p.userId));
+  const fixes = rawFixes.filter((f) => !hiddenUserIds.has(f.targetUserId));
   const isTriangle = shape === "triangle" && dimCount === 3;
   const use3D = dimCount === 3 && !flat && !isTriangle;
   const multiDim = totalViews > 1 && !use3D && !isTriangle;
@@ -635,76 +643,87 @@ export default function Chart() {
   );
 
   return (
-    <div className="flex w-full flex-col items-center gap-4">
-      {chartEl}
-      {use3D && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full sm:w-[140%] sm:-mx-[20%]">
-          {dimensionPairs.map((pair) => (
-            <MiniChart2D key={pair.join(",")} pair={pair} />
-          ))}
-        </div>
-      )}
-
+    <div className="flex w-full items-center gap-4">
       <motion.div
-        className="p-4 flex flex-col items-center gap-2"
+        className="hidden md:block absolute left-0 pb-40 pl-5 z-[1]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2, delay: 0.4 }}
+        transition={{ duration: 0.35, delay: 0.5 }}
       >
-        <div className="flex gap-2">
-          {!fixTarget && !draggingSelf && hasPlaced && !showAllFixes && (
-            <button
-              onClick={toggleShowAllFixes}
-              className="text-xs opacity-40 hover:opacity-100 transition-opacity"
-            >
-              See all fixes
-            </button>
-          )}
-        </div>
-
-        {!locked ? (
-          <p className="text-center text-sm italic opacity-50">
-            {fixTarget
-              ? `Fixing ${fixTarget.name} — drag to place.`
-              : draggingSelf
-                ? "Drag to re-place yourself."
-                : !hasPlaced
-                  ? "Click to place yourself."
-                  : "Drag fish to fix their placements."}
-          </p>
-        ) : (
-          <p className="text-center text-sm italic opacity-75">This plot is locked{countdown ? ` (${countdown})` : ""}.</p>
-        )}
-
-        {multiDim && (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() =>
-                setViewIndex(
-                  (viewIndex - 1 + totalViews) % totalViews,
-                )
-              }
-              className="opacity-40 hover:opacity-100 transition-opacity"
-            >
-              ←
-            </button>
-            <span className="text-xs opacity-60">
-              {viewIndex === 0 && dimCount === 3 ? "3D" : `(${viewIndex + 1}/${totalViews})`}
-            </span>
-            <button
-              onClick={() =>
-                setViewIndex(
-                  (viewIndex + 1) % totalViews,
-                )
-              }
-              className="opacity-40 hover:opacity-100 transition-opacity"
-            >
-              →
-            </button>
+        <ParticipantList />
+      </motion.div>
+ 
+      <div className="flex flex-1 min-w-0 flex-col items-center gap-4">
+        {chartEl}
+        {use3D && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full sm:w-[140%] sm:-mx-[20%]">
+            {dimensionPairs.map((pair) => (
+              <MiniChart2D key={pair.join(",")} pair={pair} />
+            ))}
           </div>
         )}
-      </motion.div>
+
+        <motion.div
+          className="p-4 flex flex-col items-center gap-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2, delay: 0.4 }}
+        >
+          <div className="flex gap-2">
+            {!fixTarget && !draggingSelf && hasPlaced && !showAllFixes && (
+              <button
+                onClick={toggleShowAllFixes}
+                className="text-xs opacity-40 hover:opacity-100 transition-opacity"
+              >
+                See all fixes
+              </button>
+            )}
+          </div>
+
+          {!locked ? (
+            <p className="text-center text-sm italic opacity-50">
+              {fixTarget
+                ? `Fixing ${fixTarget.name} — drag to place.`
+                : draggingSelf
+                  ? "Drag to re-place yourself."
+                  : !hasPlaced
+                    ? "Click to place yourself."
+                    : "Drag fish to fix their placements."}
+            </p>
+          ) : (
+            <p className="text-center text-sm italic opacity-75">This plot is locked{countdown ? ` (${countdown})` : ""}.</p>
+          )}
+
+          {multiDim && (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() =>
+                  setViewIndex(
+                    (viewIndex - 1 + totalViews) % totalViews,
+                  )
+                }
+                className="opacity-40 hover:opacity-100 transition-opacity"
+              >
+                ←
+              </button>
+              <span className="text-xs opacity-60">
+                {viewIndex === 0 && dimCount === 3 ? "3D" : `(${viewIndex + 1}/${totalViews})`}
+              </span>
+              <button
+                onClick={() =>
+                  setViewIndex(
+                    (viewIndex + 1) % totalViews,
+                  )
+                }
+                className="opacity-40 hover:opacity-100 transition-opacity"
+              >
+                →
+              </button>
+            </div>
+          )}
+        </motion.div>
+      </div>
     </div>
   );
 }

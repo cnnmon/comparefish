@@ -74,6 +74,10 @@ type ChartContextValue = {
   authGate: (() => boolean) | undefined;
   liveValues: number[] | null;
   setLiveValues: (v: number[] | null) => void;
+  hiddenUserIds: Set<string>;
+  toggleUser: (userId: string) => void;
+  showAllUsers: () => void;
+  hideAllUsers: () => void;
 } & ChartPlacementState;
 
 const ChartContext = createContext<ChartContextValue | null>(null);
@@ -161,6 +165,19 @@ export function ChartProvider({
   const rawMine = mine ? { x: mine.x, y: mine.y, values: mine.values } : null;
   const authGate = isAuthenticated ? undefined : requireAuth;
   const [liveValues, setLiveValues] = useState<number[] | null>(null);
+  const [hiddenUserIds, setHiddenUserIds] = useState<Set<string>>(new Set());
+  const toggleUser = useCallback((userId: string) => {
+    setHiddenUserIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  }, []);
+  const showAllUsers = useCallback(() => setHiddenUserIds(new Set()), []);
+  const hideAllUsers = useCallback(() => {
+    setHiddenUserIds(new Set((allPlacements ?? []).map((p) => p.userId)));
+  }, [allPlacements]);
 
   // Derive labels from the active dimension pair
   const xDim = dims[dimX];
@@ -247,6 +264,10 @@ export function ChartProvider({
     authGate,
     liveValues,
     setLiveValues,
+    hiddenUserIds,
+    toggleUser,
+    showAllUsers,
+    hideAllUsers,
     ...placement,
   };
 
