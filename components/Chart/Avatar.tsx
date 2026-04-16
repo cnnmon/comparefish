@@ -483,35 +483,30 @@ export function TriangleQuadrants({
     return `50,50 ${prevMid.x},${prevMid.y} ${v[i].x},${v[i].y} ${nextMid.x},${nextMid.y}`;
   });
 
+  const label = active !== null ? dimensions?.[active]?.posLabel : null;
+
   return (
-    <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-      {sectors.map((pts, i) => (
-        <polygon
-          key={i}
-          points={pts}
-          fill="var(--foreground)"
-          opacity={active === i ? 0.05 : 0}
-          style={{ transition: "opacity 0.15s" }}
-        />
-      ))}
-      {active !== null && dimensions && (() => {
-        const label = dimensions[active]?.posLabel;
-        if (!label) return null;
-        const cx = (50 + v[active].x) / 2;
-        const cy = (50 + v[active].y) / 2;
-        return (
-          <text
-            x={cx} y={cy}
-            textAnchor="middle" dominantBaseline="central"
+    <>
+      <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+        {sectors.map((pts, i) => (
+          <polygon
+            key={i}
+            points={pts}
             fill="var(--foreground)"
-            opacity={0.35}
-            fontSize={3.5}
-          >
-            {label}
-          </text>
-        );
-      })()}
-    </svg>
+            opacity={active === i ? 0.05 : 0}
+            style={{ transition: "opacity 0.15s" }}
+          />
+        ))}
+      </svg>
+      {active !== null && label && (
+        <span
+          className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-35 text-center"
+          style={{ left: `${(50 + v[active].x) / 2}%`, top: `${(50 + v[active].y) / 2}%` }}
+        >
+          {label}
+        </span>
+      )}
+    </>
   );
 }
 
@@ -527,7 +522,7 @@ export function TriangleAxes() {
   );
 }
 
-export function TriangleAxisLabels({ dimensions }: { dimensions: Dimension[] }) {
+export function TriangleAxisLabels({ dimensions, onHoverDesc }: { dimensions: Dimension[]; onHoverDesc?: (desc: string | null) => void }) {
   const v = TRI_VERTS;
   // Offset labels outward from the triangle vertices
   const labels = dimensions.slice(0, 3).map((dim, i) => {
@@ -553,7 +548,11 @@ export function TriangleAxisLabels({ dimensions }: { dimensions: Dimension[] }) 
             style={{ left: `${l.left}%`, top: `${l.top}%` }}
           >
             {l.label && <span className="whitespace-nowrap">{l.label}</span>}
-            {l.desc && <span className="block opacity-45 truncate max-w-24 pointer-events-auto cursor-help" title={l.desc}>{l.desc}</span>}
+            {l.desc && <span
+              className="block opacity-45 truncate max-w-24 pointer-events-auto cursor-help"
+              onMouseEnter={() => onHoverDesc?.(l.desc!)}
+              onMouseLeave={() => onHoverDesc?.(null)}
+            >{l.desc}</span>}
           </span>
         );
       })}

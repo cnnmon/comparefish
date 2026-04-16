@@ -86,7 +86,7 @@ export function DimensionEditor({
   return (
     <div className="flex flex-col gap-3">
       {onShapeChange && (
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-col gap-2">
           <span>Shape</span>
           <div className="flex gap-1 flex-wrap">
             {SHAPES.map((s) => (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   toPos, toPos3D, resolveImage, getQuadrantMode, projectPoint,
   type Point, type PlacedPoint, type Fix, type Dimension,
@@ -41,7 +41,7 @@ function CursorLabel({
   return (
     <div
       ref={ref}
-      className="fixed pointer-events-none z-50 text-xs px-2 py-1 rounded whitespace-nowrap transition-opacity duration-75 bg-[var(--background)] border-1 border-[var(--foreground)]"
+      className="fixed pointer-events-none z-50 text-xs px-2 py-1 rounded transition-opacity duration-75 bg-[var(--background)] border-1 border-[var(--foreground)] max-w-48 break-words"
       style={{ opacity: label ? 1 : 0, transform: "translateY(-50%)" }}
     >
       {label}
@@ -316,6 +316,7 @@ export default function Chart() {
   const multiDim = totalViews > 1 && !use3D && !isTriangle;
   const qm = quadrantMode;
   const myUserId = allPlacements.find((p) => p.isMe)?.userId;
+  const [hoveredDesc, setHoveredDesc] = useState<string | null>(null);
   const { liveValues } = ctx;
 
   // When another chart is being dragged, use liveValues for "me" position
@@ -381,6 +382,7 @@ export default function Chart() {
             name:
               allPlacements.find((p) => p.userId === hoveredUserId)?.name ?? "",
           })}`;
+    if (hoveredDesc) return hoveredDesc;
     return null;
   })();
 
@@ -432,7 +434,7 @@ export default function Chart() {
           <>
             <TriangleQuadrants values={ctx.hoveredTriValues} dimensions={dimensions} />
             <TriangleAxes />
-            <TriangleAxisLabels dimensions={dimensions} />
+            <TriangleAxisLabels dimensions={dimensions} onHoverDesc={(desc) => setHoveredDesc(desc)} />
           </>
         ) : (
           <>

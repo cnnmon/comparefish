@@ -9,30 +9,32 @@ import { Id } from "../../convex/_generated/dataModel";
 import { formatTimeLeft } from "@/components/Chart/ChartProvider";
 import { formatLabel, getUserName } from "@/components/utils";
 import { twMerge } from "tailwind-merge";
-import { toPos, toPos3D, resolveImage, getQuadrantMode, getDimensions, type AxisLabels, type Dimension } from "@/components/Chart/utils";
-import { Avatar, Axes } from "@/components/Chart/Avatar";
+import { toPos, toPos3D, resolveImage, getQuadrantMode, getDimensions, TRI_VERTS, type AxisLabels, type Dimension } from "@/components/Chart/utils";
+import { Avatar, Axes, TriangleAxes } from "@/components/Chart/Avatar";
 import Shell from "@/components/Shell";
 import FeatheredScroll from "@/components/FeatheredScroll";
 import { CreatePlotModal } from "../ComparisonPicker";
 import { useLoginModal } from "@/components/LoginModal";
 
-function PlotPreview({ comparisonId, labels, dimCount = 2 }: {
+function PlotPreview({ comparisonId, labels, dimCount = 2, shape }: {
   comparisonId: Id<"comparisons">;
   labels?: AxisLabels;
   dimCount?: number;
+  shape?: string;
 }) {
   const placements = useQuery(api.placements.getAll, { comparisonId });
   const qm = labels ? getQuadrantMode(labels) : null;
-  const is3D = dimCount === 3;
+  const isTriangle = shape === "triangle" && dimCount === 3;
+  const is3D = dimCount === 3 && !isTriangle;
 
   return (
     <div
       className="relative w-full aspect-square rounded-lg overflow-hidden"
       style={{ containerType: "inline-size" }}
     >
-      <Axes quadrantMode={qm} dimCount={dimCount} />
+      {isTriangle ? <TriangleAxes /> : <Axes quadrantMode={qm} dimCount={dimCount} />}
       {placements?.map((p) => {
-        const pos = is3D && p.values
+        const pos = (is3D || isTriangle) && p.values
           ? toPos3D(p.values)
           : toPos(p, qm);
         return (
@@ -89,7 +91,7 @@ export default function ExplorePage() {
                       onClick={() => router.push(`/compare/${c._id}`)}
                       className="flex flex-col rounded-lg border border-[var(--foreground)] cursor-pointer hover:bg-[var(--foreground)]/5 transition-colors overflow-hidden shrink-0 w-40"
                     >
-                      <PlotPreview comparisonId={c._id} labels={c} dimCount={getDimensions(c).length} />
+                      <PlotPreview comparisonId={c._id} labels={c} dimCount={getDimensions(c).length} shape={c.shape} />
                       <div className="px-2 py-1.5 flex items-center gap-1">
                         {c.private && (
                           <svg
@@ -150,7 +152,7 @@ export default function ExplorePage() {
                   onClick={() => router.push(`/compare/${c._id}`)}
                   className="flex flex-col rounded-lg border border-[var(--foreground)] cursor-pointer hover:bg-[var(--foreground)]/5 transition-colors overflow-hidden"
                 >
-                  <PlotPreview comparisonId={c._id} labels={c} dimCount={getDimensions(c).length} />
+                  <PlotPreview comparisonId={c._id} labels={c} dimCount={getDimensions(c).length} shape={c.shape} />
                   <div className="px-3 py-2 flex flex-col gap-0.5">
                     <span className="truncate font-medium">
                       {formatLabel(c)}
