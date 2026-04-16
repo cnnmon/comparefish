@@ -102,12 +102,12 @@ export default function Shell({
               >
                 About
               </a>
-              <a
-                onClick={() => isAuthenticated ? void signOut() : requireAuth()}
+              {isAuthenticated && (<a
+                onClick={signOut}
                 className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black"
               >
-                {isAuthenticated ? "Logout" : "Login"}
-              </a>
+                Logout
+              </a>)}
             </div>
           )}
 

@@ -86,9 +86,9 @@ export function DimensionEditor({
   return (
     <div className="flex flex-col gap-3">
       {onShapeChange && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="opacity-40">Shape</span>
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
             {SHAPES.map((s) => (
               <button
                 key={s.key}
@@ -108,67 +108,71 @@ export function DimensionEditor({
           </div>
         </div>
       )}
-      {dimensions.map((dim, i) => (
-        <div key={i} className="flex flex-col gap-1">
-          {currentShape === "triangle" ? (
-            <>
-              <div className="flex items-center gap-2">
-                <span className="opacity-40 shrink-0 w-10">{["top", "right", "left"][i]}</span>
-                <input
-                  value={dim.posLabel}
-                  onChange={(e) => setDim(i, "posLabel", e.target.value)}
-                  placeholder={`Vertex ${i + 1}`}
-                  className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-10 shrink-0" />
-                <input
-                  value={dim.posDescription}
-                  onChange={(e) => setDim(i, "posDescription", e.target.value)}
-                  placeholder="description"
-                  className="flex-1 min-w-0 rounded-lg border bg-transparent px-3 py-1 opacity-50 placeholder:text-zinc-400 dark:border-zinc-700"
-                />
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center gap-2">
-                <span className="opacity-40 w-4 shrink-0">{i === 0 ? "x" : i === 1 ? "y" : "z"[0]}</span>
-                <input
-                  value={dim.negLabel}
-                  onChange={(e) => setDim(i, "negLabel", e.target.value)}
-                  placeholder={`← ${i === 0 ? "left" : i === 1 ? "bottom" : "neg"}`}
-                  className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
-                />
-                <span className="opacity-30">↔</span>
-                <input
-                  value={dim.posLabel}
-                  onChange={(e) => setDim(i, "posLabel", e.target.value)}
-                  placeholder={`${i === 0 ? "right" : i === 1 ? "top" : "pos"} →`}
-                  className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-4 shrink-0" />
-                <input
-                  value={dim.negDescription}
-                  onChange={(e) => setDim(i, "negDescription", e.target.value)}
-                  placeholder="← description"
-                  className="flex-1 min-w-0 rounded-lg border bg-transparent px-3 py-1 opacity-50 placeholder:text-zinc-400 dark:border-zinc-700"
-                />
-                <span className="w-4 shrink-0" />
-                <input
-                  value={dim.posDescription}
-                  onChange={(e) => setDim(i, "posDescription", e.target.value)}
-                  placeholder="description →"
-                  className="flex-1 min-w-0 rounded-lg border bg-transparent px-3 py-1 opacity-50 placeholder:text-zinc-400 dark:border-zinc-700"
-                />
-              </div>
-            </>
-          )}
-        </div>
-      ))}
+
+      <div className="gap-2 flex flex-col">
+        <span className="opacity-40">Labels</span>
+        {dimensions.map((dim, i) => (
+          <div key={i} className="flex flex-col gap-1 mb-2">
+            {currentShape === "triangle" ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="opacity-40 shrink-0 w-10">{["top", "right", "left"][i]}</span>
+                  <input
+                    value={dim.posLabel}
+                    onChange={(e) => setDim(i, "posLabel", e.target.value)}
+                    placeholder={`Vertex ${i + 1}`}
+                    className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-10 shrink-0" />
+                  <input
+                    value={dim.posDescription}
+                    onChange={(e) => setDim(i, "posDescription", e.target.value)}
+                    placeholder="description"
+                    className="flex-1 min-w-0 rounded-lg border bg-transparent px-3 py-1 opacity-50 placeholder:text-zinc-400 dark:border-zinc-700"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="opacity-40 w-4 shrink-0">{i === 0 ? "x" : i === 1 ? "y" : "z"[0]}</span>
+                  <input
+                    value={dim.negLabel}
+                    onChange={(e) => setDim(i, "negLabel", e.target.value)}
+                    placeholder={`← ${i === 0 ? "left" : i === 1 ? "bottom" : "neg"}`}
+                    className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                  />
+                  <span className="opacity-30">↔</span>
+                  <input
+                    value={dim.posLabel}
+                    onChange={(e) => setDim(i, "posLabel", e.target.value)}
+                    placeholder={`${i === 0 ? "right" : i === 1 ? "top" : "pos"} →`}
+                    className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-4 shrink-0" />
+                  <input
+                    value={dim.negDescription}
+                    onChange={(e) => setDim(i, "negDescription", e.target.value)}
+                    placeholder="← description"
+                    className="flex-1 min-w-0 rounded-lg border bg-transparent px-3 py-1 opacity-50 placeholder:text-zinc-400 dark:border-zinc-700"
+                  />
+                  <span className="w-4 shrink-0" />
+                  <input
+                    value={dim.posDescription}
+                    onChange={(e) => setDim(i, "posDescription", e.target.value)}
+                    placeholder="description →"
+                    className="flex-1 min-w-0 rounded-lg border bg-transparent px-3 py-1 opacity-50 placeholder:text-zinc-400 dark:border-zinc-700"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -345,7 +349,7 @@ export function CreatePlotModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-[1] flex items-center justify-center bg-[var(--background)]/60"
+          className="fixed inset-0 z-[1] flex items-center justify-center overflow-y-auto bg-[var(--background)]/60"
           onClick={onClose}
         >
           <motion.div
@@ -353,10 +357,10 @@ export function CreatePlotModal({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="flex w-full m-5 rounded-xl border border-[var(--foreground)] bg-[var(--background)] flex-col md:flex-row items-center max-w-"
+            className="flex w-full m-5 my-auto rounded-xl border border-[var(--foreground)] bg-[var(--background)] flex-col md:flex-row items-stretch max-h-[calc(100dvh-2.5rem)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex flex-1 flex-col gap-3 md:border-r md:border-b-0 border-b p-5 w-full">
+            <div className="flex flex-1 flex-col gap-3 md:border-r md:border-b-0 border-b p-5 w-full overflow-y-auto">
               <h2 className="font-semibold">New comparison</h2>
               <input
                 value={settings.name}
@@ -420,7 +424,7 @@ export function CreatePlotModal({
               </div>
             </div>
 
-            <div className="flex flex-col md:flex-1 justify-center items-center">
+            <div className="hidden md:flex flex-col md:flex-1 justify-center items-center">
               <div className="relative aspect-square w-80">
                 <CreatePlotPreview dims={settings.dimensions} shape={settings.shape} />
               </div>

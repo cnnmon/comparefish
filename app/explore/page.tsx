@@ -64,7 +64,7 @@ export default function ExplorePage() {
       <CreatePlotModal open={creating} onClose={() => setCreating(false)} />
       <FeatheredScroll
         direction="vertical"
-        className="flex-col! w-full overflow-y-auto py-8"
+        className="flex-col w-full overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg">{isAuthenticated ? "Your plots" : "Public plots"}</h2>
@@ -131,7 +131,7 @@ export default function ExplorePage() {
           </div>
         )}
 
-        {!isAuthenticated ? null : <h2 className="text-lg mb-2">Public plots</h2>}
+        {!isAuthenticated ? null : <h2 className="text-lg mb-2 mt-4">Public plots</h2>}
 
         {publicPlots === undefined ? (
           <p className="opacity-50">Loading...</p>
