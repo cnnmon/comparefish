@@ -27,8 +27,9 @@ export const submit = mutation({
     y: v.number(),
     dimX: v.optional(v.number()),
     dimY: v.optional(v.number()),
+    allValues: v.optional(v.array(v.number())),
   },
-  handler: async (ctx, { comparisonId, x, y, dimX, dimY }) => {
+  handler: async (ctx, { comparisonId, x, y, dimX, dimY, allValues }) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
     const comparison = await ctx.db.get(comparisonId);
@@ -43,21 +44,24 @@ export const submit = mutation({
       .unique();
 
     const dimCount = comparison?.dimensions?.length ?? 2;
-    const ix = dimX ?? 0;
-    const iy = dimY ?? 1;
 
-    if (existing) {
-      const vals = existing.values ? [...existing.values] : Array(dimCount).fill(0);
+    let vals: number[];
+    if (allValues && allValues.length >= dimCount) {
+      vals = allValues.slice(0, dimCount);
+    } else {
+      const ix = dimX ?? 0;
+      const iy = dimY ?? 1;
+      vals = existing?.values ? [...existing.values] : Array(dimCount).fill(0);
       while (vals.length < dimCount) vals.push(0);
       vals[ix] = x;
       vals[iy] = y;
+    }
+
+    if (existing) {
       await ctx.db.patch(existing._id, { x: vals[0], y: vals[1], values: vals });
       return existing._id;
     }
 
-    const vals = Array(dimCount).fill(0);
-    vals[ix] = x;
-    vals[iy] = y;
     return await ctx.db.insert("placements", {
       userId, comparisonId, x: vals[0], y: vals[1], values: vals,
     });

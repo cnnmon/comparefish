@@ -5,7 +5,7 @@ import {
   toPos, toPos3D, resolveImage, getQuadrantMode, projectPoint,
   type Point, type PlacedPoint, type Fix, type Dimension,
 } from "./utils";
-import { Avatar, Quadrants, IsoQuadrants, Axes, AxisLabels } from "./Avatar";
+import { Avatar, Quadrants, IsoQuadrants, Axes, AxisLabels, TriangleAxes, TriangleAxisLabels, TriangleQuadrants } from "./Avatar";
 import { useChart } from "./ChartProvider";
 import { useChartPlacement } from "./useChartPlacement";
 import { motion } from "framer-motion";
@@ -309,20 +309,22 @@ export default function Chart() {
     setViewIndex,
     totalViews,
     flat,
+    shape,
   } = ctx;
-  const use3D = dimCount === 3 && !flat;
-  const multiDim = totalViews > 1 && !use3D;
+  const isTriangle = shape === "triangle" && dimCount === 3;
+  const use3D = dimCount === 3 && !flat && !isTriangle;
+  const multiDim = totalViews > 1 && !use3D && !isTriangle;
   const qm = quadrantMode;
   const myUserId = allPlacements.find((p) => p.isMe)?.userId;
   const { liveValues } = ctx;
 
   // When another chart is being dragged, use liveValues for "me" position
   const effectiveMyDot = liveValues && !draggingSelf
-    ? (use3D ? toPos3D(liveValues) : toPos(projectPoint(liveValues, 0, 0, activePair[0], activePair[1]), qm))
+    ? ((use3D || isTriangle) ? toPos3D(liveValues) : toPos(projectPoint(liveValues, 0, 0, activePair[0], activePair[1]), qm))
     : myDot;
 
   const sp = (p: Point & { values?: number[] }) =>
-    use3D ? toPos3D(p.values ?? [p.x, p.y, 0]) : toPos(p, qm);
+    (use3D || isTriangle) ? toPos3D(p.values ?? [p.x, p.y, 0]) : toPos(p, qm);
 
   // Swipe detection for multi-dim rotation (distinguishes swipe from drag/tap)
   const swipeRef = useRef<{ x: number; y: number; event: React.MouseEvent | React.TouchEvent } | null>(null);
@@ -426,20 +428,30 @@ export default function Chart() {
         onTouchEnd={wrappedUp}
         onTouchMove={handlePointerMove}
       >
-        {!use3D && <Quadrants active={hoveredQuadrant} labels={labels} quadrantMode={qm} />}
-        <Axes quadrantMode={qm} dimCount={use3D ? 3 : Math.min(dimCount, 2)} activePair={activePair} />
-        <AxisLabels
-          labels={[
-            labels.yLabelTop,
-            labels.yLabelBottom,
-            labels.xLabelRight,
-            labels.xLabelLeft,
-          ]}
-          quadrantMode={qm}
-          dimCount={use3D ? 3 : Math.min(dimCount, 2)}
-          dimensions={dimensions}
-          activePair={activePair}
-        />
+        {isTriangle ? (
+          <>
+            <TriangleQuadrants values={ctx.hoveredTriValues} dimensions={dimensions} />
+            <TriangleAxes />
+            <TriangleAxisLabels dimensions={dimensions} />
+          </>
+        ) : (
+          <>
+            {!use3D && <Quadrants active={hoveredQuadrant} labels={labels} quadrantMode={qm} />}
+            <Axes quadrantMode={qm} dimCount={use3D ? 3 : Math.min(dimCount, 2)} activePair={activePair} />
+            <AxisLabels
+              labels={[
+                labels.yLabelTop,
+                labels.yLabelBottom,
+                labels.xLabelRight,
+                labels.xLabelLeft,
+              ]}
+              quadrantMode={qm}
+              dimCount={use3D ? 3 : Math.min(dimCount, 2)}
+              dimensions={dimensions}
+              activePair={activePair}
+            />
+          </>
+        )}
 
         {displayFixes.length > 0 && (
           <svg

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Id } from "../../convex/_generated/dataModel";
-import { Point, toPos, toPos3D, fromScreen3D, PlacedPoint, Fix, type QuadrantMode } from "./utils";
+import { Point, toPos, toPos3D, fromScreen3D, fromScreenTriangle, PlacedPoint, Fix, type QuadrantMode } from "./utils";
 
 export function useChartPlacement({
   myPlacement,
@@ -20,6 +20,7 @@ export function useChartPlacement({
   flat = false,
   onLiveUpdate,
   onDeletePlacement,
+  shape,
 }: {
   myPlacement: Point | null;
   myValues: number[] | null;
@@ -36,6 +37,7 @@ export function useChartPlacement({
   fixedDimIdx?: number;
   flat?: boolean;
   onLiveUpdate?: (values: number[] | null) => void;
+  shape?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<Point>(myPlacement ?? { x: 0, y: 0 });
@@ -63,14 +65,20 @@ export function useChartPlacement({
   const onLiveUpdateRef = useRef(onLiveUpdate);
   onLiveUpdateRef.current = onLiveUpdate;
 
+  const isTriangle = shape === "triangle" && dimCount === 3;
+
   const broadcastLive = useCallback((p: Point | null) => {
     if (!onLiveUpdateRef.current) return;
     if (!p) { onLiveUpdateRef.current(null); return; }
+    if (isTriangle) {
+      onLiveUpdateRef.current([p.x, p.y, -p.x - p.y]);
+      return;
+    }
     const vals = myValuesRef.current ? [...myValuesRef.current] : Array(Math.max(dimCount, 2)).fill(0);
     vals[activePairRef.current[0]] = p.x;
     vals[activePairRef.current[1]] = p.y;
     onLiveUpdateRef.current(vals);
-  }, [dimCount]);
+  }, [dimCount, isTriangle]);
 
   useEffect(() => {
     if (myPlacement) {
@@ -79,7 +87,7 @@ export function useChartPlacement({
     }
   }, [myPlacement?.x, myPlacement?.y]);
 
-  const use3D = dimCount === 3 && !flat;
+  const use3D = dimCount === 3 && !flat && !isTriangle;
   const fixedVal = use3D && myValues ? (myValues[fixedDimIdx] ?? 0) : 0;
 
   const fromClientXY = useCallback(
@@ -92,6 +100,10 @@ export function useChartPlacement({
       const clamp = unclamped
         ? (v: number) => v
         : (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+      if (isTriangle) {
+        const [v0, v1] = fromScreenTriangle(pctX, pctY);
+        return { x: v0, y: v1 };
+      }
       if (use3D) {
         return fromScreen3D(pctX, pctY, activePair, fixedDimIdx, fixedVal);
       }
@@ -110,7 +122,7 @@ export function useChartPlacement({
         y: clamp(-(pctY - 0.5) / 0.44, -1, 1),
       };
     },
-    [quadrantMode, dimCount, activePair, fixedDimIdx, fixedVal, use3D],
+    [quadrantMode, dimCount, activePair, fixedDimIdx, fixedVal, use3D, isTriangle],
   );
 
   const fromEvent = useCallback(
@@ -140,7 +152,7 @@ export function useChartPlacement({
       const clickPx = { x: clientX - rect.left, y: clientY - rect.top };
       const hitRadius = rect.width * 0.07;
       for (const other of allPlacements) {
-        const sp = use3D && other.values
+        const sp = (use3D || isTriangle) && other.values
           ? toPos3D(other.values)
           : toPos(other, quadrantMode);
         const ox = (sp.left / 100) * rect.width;
@@ -192,23 +204,28 @@ export function useChartPlacement({
     [hasPlaced, fromEvent, onPlace, requireAuth],
   );
 
+  const [hoveredTriValues, setHoveredTriValues] = useState<number[] | null>(null);
+
   const handlePointerMove = useCallback(
     (e: React.MouseEvent | React.TouchEvent) => {
       const p = fromEvent(e);
       if (p) {
-        const col = p.x >= 0 ? 1 : 0;
-        const row = p.y > 0 ? 0 : 1;
-        setHoveredQuadrant(row * 2 + col);
+        if (isTriangle) {
+          setHoveredTriValues([p.x, p.y, -p.x - p.y]);
+        } else {
+          const col = p.x >= 0 ? 1 : 0;
+          const row = p.y > 0 ? 0 : 1;
+          setHoveredQuadrant(row * 2 + col);
+        }
       }
       if (dragRef.current) {
-        // Self-drag position is handled by window-level listeners
         if (dragRef.current.type === "self") return;
         if (p) setFixPos(p);
         return;
       }
       setHoveredUserId(hitTest(e)?.userId ?? null);
     },
-    [hitTest, fromEvent],
+    [hitTest, fromEvent, isTriangle],
   );
 
   const onDeletePlacementRef = useRef(onDeletePlacement);
@@ -268,10 +285,14 @@ export function useChartPlacement({
       broadcastLive(null);
     }
     setHoveredQuadrant(null);
+    setHoveredTriValues(null);
     setHoveredUserId(null);
   }, [broadcastLive]);
 
   const myDot = (() => {
+    if (isTriangle) {
+      return toPos3D([pos.x, pos.y, -pos.x - pos.y]);
+    }
     if (use3D) {
       const vals = myValues ? [...myValues] : Array(3).fill(0);
       vals[activePair[0]] = pos.x;
@@ -322,6 +343,7 @@ export function useChartPlacement({
     fixPos,
     hoveredUserId,
     hoveredQuadrant,
+    hoveredTriValues,
     activeFixTargetId,
     draggingSelf,
     dragRef,

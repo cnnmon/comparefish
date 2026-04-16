@@ -16,6 +16,7 @@ const schema = defineSchema({
     name: v.optional(v.string()),
     private: v.optional(v.boolean()),
     expiresAt: v.optional(v.number()),
+    shape: v.optional(v.string()),
     xLabelLeft: v.optional(v.string()),
     xLabelRight: v.optional(v.string()),
     yLabelTop: v.optional(v.string()),

@@ -129,6 +129,29 @@ export function fromScreen3D(
   };
 }
 
+// Triangle vertices (equilateral, same positions as ISO positive endpoints)
+export const TRI_VERTS = ISO_AXES.map((ax) => ({ x: 50 + ax.x, y: 50 + ax.y }));
+
+// Reverse triangle: screen % → 3 values with constraint v0+v1+v2=0
+export function fromScreenTriangle(pctX: number, pctY: number): number[] {
+  const sx = (pctX - 0.5) * 100;
+  const sy = (pctY - 0.5) * 100;
+  // Solve: sx = v0*ax0.x + v1*ax1.x + v2*ax2.x, sy = ..., v0+v1+v2 = 0
+  // Since ax0+ax1+ax2 = (0,0), substitute v2 = -v0-v1:
+  // sx = v0*(ax0.x - ax2.x) + v1*(ax1.x - ax2.x)
+  // sy = v0*(ax0.y - ax2.y) + v1*(ax1.y - ax2.y)
+  const a0 = ISO_AXES[0].x - ISO_AXES[2].x;
+  const a1 = ISO_AXES[1].x - ISO_AXES[2].x;
+  const b0 = ISO_AXES[0].y - ISO_AXES[2].y;
+  const b1 = ISO_AXES[1].y - ISO_AXES[2].y;
+  const det = a0 * b1 - a1 * b0;
+  const clamp = (v: number) => Math.max(-1, Math.min(1, v));
+  const v0 = clamp((sx * b1 - sy * a1) / det);
+  const v1 = clamp((a0 * sy - b0 * sx) / det);
+  const v2 = clamp(-v0 - v1);
+  return [v0, v1, v2];
+}
+
 export type Dimension = { negLabel: string; posLabel: string; negDescription?: string; posDescription?: string };
 
 export function getDimensions(comparison: {

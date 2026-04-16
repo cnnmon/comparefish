@@ -8,7 +8,7 @@ import { AvatarPicker } from "./AvatarPicker";
 import Image from "next/image";
 import { resolveAvatar, resolveImage } from "../Chart/utils";
 import { formatLabel } from "../utils";
-import { CreatePlotModal, DimensionEditor, emptyDim, type Dimension } from "@/app/ComparisonPicker";
+import { CreatePlotModal, DimensionEditor, emptyDim, shapeFromDimCount, type Dimension, type ChartShape } from "@/app/ComparisonPicker";
 import { getDimensions } from "../Chart/utils";
 import { Id } from "@/convex/_generated/dataModel";
 import { Modal } from "../Modal";
@@ -47,6 +47,7 @@ export default function Shell({
   const [creating, setCreating] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [dimsDraft, setDimsDraft] = useState<Dimension[]>([]);
+  const [shapeDraft, setShapeDraft] = useState<ChartShape>("grid");
   const [editingName, setEditingName] = useState(false);
   const [userNameDraft, setUserNameDraft] = useState("");
   const [nameError, setNameError] = useState("");
@@ -70,6 +71,7 @@ export default function Shell({
         negDescription: d.negDescription ?? "",
         posDescription: d.posDescription ?? "",
       })));
+      setShapeDraft(shapeFromDimCount(dims.length, comparison.shape));
     }
   }, [settingsOpen, comparison]);
 
@@ -340,7 +342,8 @@ export default function Shell({
                 <DimensionEditor
                   dimensions={dimsDraft}
                   onChange={setDimsDraft}
-                  allowAddRemove={false}
+                  shape={shapeDraft}
+                  onShapeChange={setShapeDraft}
                 />
                 <button
                   type="button"
@@ -351,11 +354,15 @@ export default function Shell({
                       negDescription: d.negDescription.trim() || undefined,
                       posDescription: d.posDescription.trim() || undefined,
                     }));
-                    void updateDimensions({ id: comparisonId, dimensions: dims });
+                    void updateDimensions({
+                      id: comparisonId,
+                      dimensions: dims,
+                      shape: shapeDraft !== "grid" ? shapeDraft : undefined,
+                    });
                     setSettingsOpen(false);
                   }}
                 >
-                  Save axes
+                  Save
                 </button>
                 <div className="flex items-center justify-between gap-4">
                   <span>Visibility</span>

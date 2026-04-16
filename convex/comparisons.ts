@@ -62,6 +62,7 @@ export const create = mutation({
     name: v.optional(v.string()),
     private: v.optional(v.boolean()),
     durationHours: v.optional(v.number()),
+    shape: v.optional(v.string()),
     xLabelLeft: v.optional(v.string()),
     xLabelRight: v.optional(v.string()),
     yLabelTop: v.optional(v.string()),
@@ -156,15 +157,16 @@ export const updateDimensions = mutation({
   args: {
     id: v.id("comparisons"),
     dimensions: v.array(dimensionValidator),
+    shape: v.optional(v.string()),
   },
-  handler: async (ctx, { id, dimensions }) => {
+  handler: async (ctx, { id, dimensions, shape }) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) throw new Error("Not authenticated");
     const comparison = await ctx.db.get(id);
     if (!comparison) throw new Error("Not found");
     if (comparison.creatorId !== userId) throw new Error("Not authorized");
     moderateTexts(...dimensions.flatMap((d) => [d.negLabel, d.posLabel, d.negDescription, d.posDescription]));
-    const patch: Record<string, unknown> = { dimensions };
+    const patch: Record<string, unknown> = { dimensions, shape: shape || undefined };
     if (dimensions.length >= 1) {
       patch.xLabelLeft = dimensions[0].negLabel || undefined;
       patch.xLabelRight = dimensions[0].posLabel || undefined;

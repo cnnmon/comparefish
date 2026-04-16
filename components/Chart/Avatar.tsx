@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { nameToColor, ISO_AXES as ISO_AX, type QuadrantMode, type Dimension } from "./utils";
+import { nameToColor, ISO_AXES as ISO_AX, TRI_VERTS, type QuadrantMode, type Dimension } from "./utils";
 import Image from "next/image";
 
 export function Avatar({
@@ -445,6 +445,115 @@ function IsoAxisLabels({ dimensions, activePair }: { dimensions: Dimension[]; ac
           >
             {ep.label && <span className="whitespace-nowrap">{ep.label}</span>}
             {ep.desc && <span className="block opacity-45 truncate max-w-24 pointer-events-auto cursor-help" title={ep.desc}>{ep.desc}</span>}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
+// 3 sectors, one per vertex. Highest value wins.
+function triSectorFromValues(values: number[]): number {
+  let best = 0;
+  for (let i = 1; i < 3; i++) {
+    if ((values[i] ?? 0) > (values[best] ?? 0)) best = i;
+  }
+  return best;
+}
+
+export function TriangleQuadrants({
+  values,
+  dimensions,
+}: {
+  values: number[] | null;
+  dimensions?: Dimension[];
+}) {
+  const active = values ? triSectorFromValues(values) : null;
+  const v = TRI_VERTS;
+  // Edge midpoints: between vertex i and vertex (i+1)%3
+  const mids = v.map((_, i) => ({
+    x: (v[i].x + v[(i + 1) % 3].x) / 2,
+    y: (v[i].y + v[(i + 1) % 3].y) / 2,
+  }));
+  // Sector i: center → mid before vertex i → vertex i → mid after vertex i
+  // dim order is [0=bottom-right, 1=top, 2=bottom-left]
+  const sectors = v.map((_, i) => {
+    const prevMid = mids[(i + 2) % 3];
+    const nextMid = mids[i];
+    return `50,50 ${prevMid.x},${prevMid.y} ${v[i].x},${v[i].y} ${nextMid.x},${nextMid.y}`;
+  });
+
+  return (
+    <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+      {sectors.map((pts, i) => (
+        <polygon
+          key={i}
+          points={pts}
+          fill="var(--foreground)"
+          opacity={active === i ? 0.05 : 0}
+          style={{ transition: "opacity 0.15s" }}
+        />
+      ))}
+      {active !== null && dimensions && (() => {
+        const label = dimensions[active]?.posLabel;
+        if (!label) return null;
+        const cx = (50 + v[active].x) / 2;
+        const cy = (50 + v[active].y) / 2;
+        return (
+          <text
+            x={cx} y={cy}
+            textAnchor="middle" dominantBaseline="central"
+            fill="var(--foreground)"
+            opacity={0.35}
+            fontSize={3.5}
+          >
+            {label}
+          </text>
+        );
+      })()}
+    </svg>
+  );
+}
+
+export function TriangleAxes() {
+  const v = TRI_VERTS;
+  return (
+    <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <polygon
+        points={v.map((p) => `${p.x},${p.y}`).join(" ")}
+        fill="none" stroke="var(--foreground)" strokeWidth="0.5" strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function TriangleAxisLabels({ dimensions }: { dimensions: Dimension[] }) {
+  const v = TRI_VERTS;
+  // Offset labels outward from the triangle vertices
+  const labels = dimensions.slice(0, 3).map((dim, i) => {
+    const dx = v[i].x - 50;
+    const dy = v[i].y - 50;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const scale = 1.18;
+    return {
+      label: dim.posLabel || dim.negLabel,
+      desc: dim.posDescription || dim.negDescription,
+      left: 50 + dx * scale,
+      top: 50 + dy * scale,
+    };
+  });
+  return (
+    <>
+      {labels.map((l, i) => {
+        if (!l.label && !l.desc) return null;
+        return (
+          <span
+            key={i}
+            className="absolute z-10 bg-[var(--background)] px-1 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none"
+            style={{ left: `${l.left}%`, top: `${l.top}%` }}
+          >
+            {l.label && <span className="whitespace-nowrap">{l.label}</span>}
+            {l.desc && <span className="block opacity-45 truncate max-w-24 pointer-events-auto cursor-help" title={l.desc}>{l.desc}</span>}
           </span>
         );
       })}

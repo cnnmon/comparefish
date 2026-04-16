@@ -11,87 +11,164 @@ import { twMerge } from "tailwind-merge";
 import { getUserName, formatLabel } from "@/components/utils";
 
 export type Dimension = { negLabel: string; posLabel: string; negDescription: string; posDescription: string };
+export type ChartShape = "line" | "grid" | "triangle" | "3d";
 
 const MAX_DIMS = 3;
 
 export const emptyDim = (): Dimension => ({ negLabel: "", posLabel: "", negDescription: "", posDescription: "" });
 
+function dimCountForShape(shape: ChartShape): number {
+  return shape === "line" ? 1 : shape === "grid" ? 2 : 3;
+}
+
+export function shapeFromDimCount(n: number, shape?: string): ChartShape {
+  if (shape === "triangle") return "triangle";
+  if (shape === "3d") return "3d";
+  return n === 1 ? "line" : n === 3 ? "3d" : "grid";
+}
+
+const SHAPES: { key: ChartShape; label: string; icon: (active: boolean) => React.ReactNode }[] = [
+  { key: "line", label: "Line", icon: (active) => (
+    <svg viewBox="0 0 32 32" className="w-6 h-6">
+      <line x1="4" y1="16" x2="28" y2="16" stroke="currentColor" strokeWidth={active ? 2.5 : 1.5} />
+    </svg>
+  )},
+  { key: "grid", label: "Grid", icon: (active) => (
+    <svg viewBox="0 0 32 32" className="w-6 h-6">
+      <line x1="16" y1="4" x2="16" y2="28" stroke="currentColor" strokeWidth={active ? 2.5 : 1.5} />
+      <line x1="4" y1="16" x2="28" y2="16" stroke="currentColor" strokeWidth={active ? 2.5 : 1.5} />
+    </svg>
+  )},
+  { key: "triangle", label: "Triangle", icon: (active) => (
+    <svg viewBox="0 0 32 32" className="w-6 h-6">
+      <polygon points="16,4 3,27 29,27" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 1.5} strokeLinejoin="round" />
+    </svg>
+  )},
+  { key: "3d", label: "3D Space", icon: (active) => (
+    <svg viewBox="0 0 32 32" className="w-6 h-6">
+      <line x1="16" y1="4" x2="16" y2="28" stroke="currentColor" strokeWidth={active ? 2.5 : 1.5} />
+      <line x1="16" y1="16" x2="28" y2="26" stroke="currentColor" strokeWidth={active ? 2.5 : 1.5} />
+      <line x1="16" y1="16" x2="4" y2="26" stroke="currentColor" strokeWidth={active ? 2.5 : 1.5} />
+    </svg>
+  )},
+];
+
 export function DimensionEditor({
   dimensions,
   onChange,
-  allowAddRemove = true,
+  shape,
+  onShapeChange,
 }: {
   dimensions: Dimension[];
   onChange: (dims: Dimension[]) => void;
-  allowAddRemove?: boolean;
+  shape?: ChartShape;
+  onShapeChange?: (shape: ChartShape) => void;
 }) {
   const setDim = (i: number, field: keyof Dimension, val: string) => {
     const dims = [...dimensions];
     dims[i] = { ...dims[i], [field]: val };
     onChange(dims);
   };
-  const addDim = () => onChange([...dimensions, emptyDim()]);
-  const removeDim = (i: number) => onChange(dimensions.filter((_, j) => j !== i));
+
+  const currentShape = shape ?? shapeFromDimCount(dimensions.length);
+
+  const selectShape = (s: ChartShape) => {
+    onShapeChange?.(s);
+    const count = dimCountForShape(s);
+    if (count !== dimensions.length) {
+      const next = [...dimensions];
+      while (next.length < count) next.push(emptyDim());
+      while (next.length > count) next.pop();
+      onChange(next);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-3">
-      {dimensions.map((dim, i) => (
-        <div key={i} className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <span className="opacity-40 w-4 shrink-0">{i === 0 ? "x" : i === 1 ? "y" : "z"[0]}</span>
-            <input
-              value={dim.negLabel}
-              onChange={(e) => setDim(i, "negLabel", e.target.value)}
-              placeholder={`← ${i === 0 ? "left" : i === 1 ? "bottom" : "neg"}`}
-              className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
-            />
-            <span className="opacity-30">↔</span>
-            <input
-              value={dim.posLabel}
-              onChange={(e) => setDim(i, "posLabel", e.target.value)}
-              placeholder={`${i === 0 ? "right" : i === 1 ? "top" : "pos"} →`}
-              className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
-            />
-            {allowAddRemove && dimensions.length > 1 && (
+      {onShapeChange && (
+        <div className="flex items-center gap-2">
+          <span className="opacity-40">Shape</span>
+          <div className="flex gap-1">
+            {SHAPES.map((s) => (
               <button
+                key={s.key}
                 type="button"
-                onClick={() => removeDim(i)}
-                className="opacity-30 hover:opacity-100 shrink-0 h-9 w-9 flex items-center justify-center"
+                onClick={() => selectShape(s.key)}
+                className={twMerge(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all",
+                  currentShape === s.key
+                    ? "border-[var(--foreground)] opacity-100"
+                    : "border-transparent opacity-40 hover:opacity-70",
+                )}
               >
-                ×
+                {s.icon(currentShape === s.key)}
+                <span>{s.label}</span>
               </button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-4 shrink-0" />
-            <input
-              value={dim.negDescription}
-              onChange={(e) => setDim(i, "negDescription", e.target.value)}
-              placeholder="← description"
-              className="flex-1 min-w-0 rounded-lg border bg-transparent px-3 py-1 opacity-50 placeholder:text-zinc-400 dark:border-zinc-700"
-            />
-            <span className="w-4 shrink-0" />
-            <input
-              value={dim.posDescription}
-              onChange={(e) => setDim(i, "posDescription", e.target.value)}
-              placeholder="description →"
-              className="flex-1 min-w-0 rounded-lg border bg-transparent px-3 py-1 opacity-50 placeholder:text-zinc-400 dark:border-zinc-700"
-            />
-            {allowAddRemove && dimensions.length > 1 && (
-              <span className="shrink-0 h-9 w-9" />
-            )}
+            ))}
           </div>
         </div>
-      ))}
-      {allowAddRemove && dimensions.length < MAX_DIMS && (
-        <button
-          type="button"
-          onClick={addDim}
-          className="text-left opacity-40 hover:opacity-100 transition-opacity"
-        >
-          + Add dimension ({dimensions.length}/{MAX_DIMS})
-        </button>
       )}
+      {dimensions.map((dim, i) => (
+        <div key={i} className="flex flex-col gap-1">
+          {currentShape === "triangle" ? (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="opacity-40 shrink-0 w-10">{["top", "right", "left"][i]}</span>
+                <input
+                  value={dim.posLabel}
+                  onChange={(e) => setDim(i, "posLabel", e.target.value)}
+                  placeholder={`Vertex ${i + 1}`}
+                  className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-10 shrink-0" />
+                <input
+                  value={dim.posDescription}
+                  onChange={(e) => setDim(i, "posDescription", e.target.value)}
+                  placeholder="description"
+                  className="flex-1 min-w-0 rounded-lg border bg-transparent px-3 py-1 opacity-50 placeholder:text-zinc-400 dark:border-zinc-700"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="opacity-40 w-4 shrink-0">{i === 0 ? "x" : i === 1 ? "y" : "z"[0]}</span>
+                <input
+                  value={dim.negLabel}
+                  onChange={(e) => setDim(i, "negLabel", e.target.value)}
+                  placeholder={`← ${i === 0 ? "left" : i === 1 ? "bottom" : "neg"}`}
+                  className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                />
+                <span className="opacity-30">↔</span>
+                <input
+                  value={dim.posLabel}
+                  onChange={(e) => setDim(i, "posLabel", e.target.value)}
+                  placeholder={`${i === 0 ? "right" : i === 1 ? "top" : "pos"} →`}
+                  className="h-9 flex-1 min-w-0 rounded-lg border bg-transparent px-3 placeholder:text-zinc-400 dark:border-zinc-700"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-4 shrink-0" />
+                <input
+                  value={dim.negDescription}
+                  onChange={(e) => setDim(i, "negDescription", e.target.value)}
+                  placeholder="← description"
+                  className="flex-1 min-w-0 rounded-lg border bg-transparent px-3 py-1 opacity-50 placeholder:text-zinc-400 dark:border-zinc-700"
+                />
+                <span className="w-4 shrink-0" />
+                <input
+                  value={dim.posDescription}
+                  onChange={(e) => setDim(i, "posDescription", e.target.value)}
+                  placeholder="description →"
+                  className="flex-1 min-w-0 rounded-lg border bg-transparent px-3 py-1 opacity-50 placeholder:text-zinc-400 dark:border-zinc-700"
+                />
+              </div>
+            </>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -100,10 +177,11 @@ const defaultSettings = {
   name: "",
   isPrivate: false,
   durationHours: 0,
+  shape: "grid" as ChartShape,
   dimensions: [emptyDim(), emptyDim()] as Dimension[],
 };
 
-function CreatePlotPreview({ dims }: { dims: Dimension[] }) {
+function CreatePlotPreview({ dims, shape }: { dims: Dimension[]; shape: ChartShape }) {
   const d0 = dims[0] ?? { negLabel: "", posLabel: "" };
   const d1 = dims[1] ?? { negLabel: "", posLabel: "" };
 
@@ -121,6 +199,38 @@ function CreatePlotPreview({ dims }: { dims: Dimension[] }) {
             {d0.posLabel.trim()}
           </span>
         )}
+      </>
+    );
+  }
+
+  if (dims.length === 3 && shape === "triangle") {
+    const S = 30;
+    const C = 0.866;
+    const verts = [
+      { x: 50, y: 50 - S },                    // top
+      { x: 50 + S * C, y: 50 + S * 0.5 },      // bottom-right
+      { x: 50 - S * C, y: 50 + S * 0.5 },      // bottom-left
+    ];
+    const labels = dims.slice(0, 3).map((d, i) => ({
+      text: d.posLabel.trim() || d.negLabel.trim(),
+      ...verts[i],
+    }));
+    return (
+      <>
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+          <polygon
+            points={verts.map((v) => `${v.x},${v.y}`).join(" ")}
+            fill="none" stroke="var(--foreground)" strokeWidth="0.4" strokeLinejoin="round"
+          />
+        </svg>
+        {labels.map((l, i) => l.text ? (
+          <span key={i}
+            className="absolute text-xs bg-[var(--background)] px-1 whitespace-nowrap -translate-x-1/2 -translate-y-1/2 text-center opacity-80"
+            style={{ left: `${l.x}%`, top: `${l.y}%` }}
+          >
+            {l.text}
+          </span>
+        ) : null)}
       </>
     );
   }
@@ -219,6 +329,7 @@ export function CreatePlotModal({
       name: settings.name.trim() || undefined,
       private: settings.isPrivate || undefined,
       durationHours: settings.durationHours || undefined,
+      shape: settings.shape !== "grid" ? settings.shape : undefined,
       dimensions: dims,
     });
     router.push(`/compare/${id}`);
@@ -257,6 +368,8 @@ export function CreatePlotModal({
               <DimensionEditor
                 dimensions={settings.dimensions}
                 onChange={(dims) => set("dimensions", dims)}
+                shape={settings.shape}
+                onShapeChange={(s) => set("shape", s)}
               />
               <div className="flex items-center gap-2">
                 <span>Visibility</span>
@@ -309,7 +422,7 @@ export function CreatePlotModal({
 
             <div className="flex flex-col md:flex-1 justify-center items-center">
               <div className="relative aspect-square w-80">
-                <CreatePlotPreview dims={settings.dimensions} />
+                <CreatePlotPreview dims={settings.dimensions} shape={settings.shape} />
               </div>
             </div>
           </motion.div>

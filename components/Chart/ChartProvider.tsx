@@ -66,6 +66,7 @@ type ChartContextValue = {
   setViewIndex: (i: number) => void;
   totalViews: number;
   flat: boolean;
+  shape: string | undefined;
   comparisonId: Id<"comparisons">;
   rawMine: { x: number; y: number; values?: number[] } | null;
   placePair: (args: { x: number; y: number; dimX: number; dimY: number }) => void;
@@ -108,7 +109,9 @@ export function ChartProvider({
   const dims = comparison ? getDimensions(comparison) : [];
   const dimPairs = getDimensionPairs(dims.length);
   const dimCount = dims.length;
-  const is3D = dimCount === 3;
+  const shape = comparison?.shape;
+  const isTriangle = shape === "triangle" && dimCount === 3;
+  const is3D = dimCount === 3 && !isTriangle;
   const totalViews = is3D ? 1 + dimPairs.length : Math.max(dimPairs.length, 1);
   const [viewIndex, setViewIndex] = useState(0);
   const flat = is3D ? viewIndex > 0 : true;
@@ -117,14 +120,24 @@ export function ChartProvider({
   const [dimX, dimY] = activePair;
 
   const onPlace = useCallback(
-    (x: number, y: number) =>
-      void submitPlacement({ comparisonId, x, y, dimX, dimY }),
-    [submitPlacement, comparisonId, dimX, dimY],
+    (x: number, y: number) => {
+      if (isTriangle) {
+        void submitPlacement({ comparisonId, x, y, allValues: [x, y, -x - y] });
+      } else {
+        void submitPlacement({ comparisonId, x, y, dimX, dimY });
+      }
+    },
+    [submitPlacement, comparisonId, dimX, dimY, isTriangle],
   );
   const onFix = useCallback(
-    (targetUserId: Id<"users">, x: number, y: number) =>
-      void submitFix({ targetUserId, comparisonId, x, y, dimX, dimY }),
-    [submitFix, comparisonId, dimX, dimY],
+    (targetUserId: Id<"users">, x: number, y: number) => {
+      if (isTriangle) {
+        void submitFix({ targetUserId, comparisonId, x, y, allValues: [x, y, -x - y] });
+      } else {
+        void submitFix({ targetUserId, comparisonId, x, y, dimX, dimY });
+      }
+    },
+    [submitFix, comparisonId, dimX, dimY, isTriangle],
   );
   const onDeleteFix = useCallback(
     (fixId: Id<"fixes">) => void deleteFix({ fixId }),
@@ -197,6 +210,7 @@ export function ChartProvider({
     activePair,
     fixedDimIdx,
     flat,
+    shape,
     onLiveUpdate: setLiveValues,
   });
 
@@ -225,6 +239,7 @@ export function ChartProvider({
     setViewIndex,
     totalViews,
     flat,
+    shape,
     comparisonId,
     rawMine,
     placePair,
