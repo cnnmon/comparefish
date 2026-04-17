@@ -52,7 +52,7 @@ export function Avatar({
   
   return (
     <div
-      className={`absolute flex flex-col items-center -translate-x-1/2 -translate-y-1/2 select-none${dim ? " animate-wiggle-hard" : wiggle ? " animate-wiggle" : ""}`}
+      className={`absolute z-[1] flex flex-col items-center -translate-x-1/2 -translate-y-1/2 select-none${dim ? " animate-wiggle-hard" : wiggle ? " animate-wiggle" : ""}`}
       style={{
         left: `${left}%`,
         top: `${top}%`,
