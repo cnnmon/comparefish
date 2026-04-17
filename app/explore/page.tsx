@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useConvexAuth } from "convex/react";
 import { motion } from "framer-motion";
@@ -60,6 +60,17 @@ export default function ExplorePage() {
   const { requireAuth } = useLoginModal();
   const myPlots = comparisons?.filter((c) => user && c.creatorId === user._id);
   const publicPlots = comparisons?.filter((c) => !c.private);
+  const scrolledRef = useRef(false);
+  useEffect(() => {
+    if (scrolledRef.current || !comparisons) return;
+    const id = sessionStorage.getItem("explore-scroll-to");
+    if (!id) return;
+    sessionStorage.removeItem("explore-scroll-to");
+    scrolledRef.current = true;
+    requestAnimationFrame(() => {
+      document.getElementById(`plot-${id}`)?.scrollIntoView({ behavior: "instant", block: "center" });
+    });
+  }, [comparisons]);
   return (
     <Shell comparisonId={null} ready={comparisons !== undefined}>
       <CreatePlotModal open={creating} onClose={() => setCreating(false)} />
@@ -83,6 +94,7 @@ export default function ExplorePage() {
                   const isLocked = c.expiresAt ? c.expiresAt <= Date.now() : false;
                   return (
                     <motion.div
+                      id={`plot-${c._id}`}
                       key={c._id}
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -144,6 +156,7 @@ export default function ExplorePage() {
               const isExpired = c.expiresAt ? c.expiresAt <= Date.now() : false;
               return (
                 <motion.div
+                  id={`plot-${c._id}`}
                   key={c._id}
                   initial={{ opacity: 0, y: 5 }}
                   animate={{ opacity: 1, y: 0 }}

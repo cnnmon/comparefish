@@ -107,7 +107,10 @@ export default function Shell({
               <div className="flex items-center gap-2">
                 <span
                   className="cursor-pointer hover:opacity-60 transition-opacity"
-                  onClick={() => router.push("/explore")}
+                  onClick={() => {
+                    if (comparisonId) sessionStorage.setItem("explore-scroll-to", comparisonId);
+                    router.push("/explore");
+                  }}
                   title="Back to explore"
                 >
                   &larr;
@@ -215,7 +218,10 @@ export default function Shell({
               <p>
                 <a
                   className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
-                  onClick={() => router.push("/explore")}
+                  onClick={() => {
+                    if (comparisonId) sessionStorage.setItem("explore-scroll-to", comparisonId);
+                    router.push("/explore");
+                  }}
                 >
                   More plots
                 </a>
