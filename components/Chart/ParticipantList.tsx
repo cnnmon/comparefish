@@ -47,8 +47,9 @@ export default function ParticipantList() {
         </button>
       </div>
 
-      <div className="flex flex-col gap-0.5 overflow-y-auto max-h-[40%]">
-        {filtered.map((p) => {
+      <div className="flex flex-col gap-0.5 overflow-y-auto max-h-[40vh]">
+        {Array(500).fill(filtered).flat().map((p, idx) => {
+   
           const visible = !hiddenUserIds.has(p.userId);
           const img = resolveImage({ name: p.name, avatar: p.avatar });
           return (
