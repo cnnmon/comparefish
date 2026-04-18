@@ -309,22 +309,34 @@ export function useChartPlacement({
   fromClientXYRef.current = fromClientXY;
   useEffect(() => {
     if (!draggingSelf) return;
-    const onMouseMove = (e: MouseEvent) => {
-      const p = fromClientXYRef.current(e.clientX, e.clientY, true);
+    const onMove = (clientX: number, clientY: number) => {
+      const p = fromClientXYRef.current(clientX, clientY, true);
       if (!p) return;
       setSelfNearEdge(Math.abs(p.x) > 1.3 || Math.abs(p.y) > 1.3);
       setPos(p);
       broadcastLive(p);
     };
-    const onMouseUp = () => {
+    const onMouseMove = (e: MouseEvent) => onMove(e.clientX, e.clientY);
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      const t = e.touches[0];
+      if (t) onMove(t.clientX, t.clientY);
+    };
+    const onUp = () => {
       if (!dragRef.current || dragRef.current.type !== "self") return;
       handlePointerUp();
     };
     window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onUp);
+    window.addEventListener("touchcancel", onUp);
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onUp);
+      window.removeEventListener("touchcancel", onUp);
     };
   }, [draggingSelf, handlePointerUp, broadcastLive]);
 

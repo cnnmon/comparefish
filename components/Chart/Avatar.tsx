@@ -323,13 +323,15 @@ export function AxisLabels({
     return (
       <>
         {labels[3] && (
-          <span className="absolute z-10 left-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2" title={descs[3] || undefined}>
+          <span className="absolute z-10 left-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2">
             <span className="whitespace-nowrap">{labels[3]}</span>
+            {descs[3] && <span className="block whitespace-nowrap opacity-40">{descs[3]}</span>}
           </span>
         )}
         {labels[2] && (
-          <span className="absolute z-10 right-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2 text-right" title={descs[2] || undefined}>
+          <span className="absolute z-10 right-[1%] top-1/2 -translate-y-1/2 bg-[var(--background)] px-2 text-right">
             <span className="whitespace-nowrap">{labels[2]}</span>
+            {descs[2] && <span className="block whitespace-nowrap opacity-40">{descs[2]}</span>}
           </span>
         )}
       </>
@@ -350,18 +352,18 @@ export function AxisLabels({
           <span
             className="absolute z-10 bg-[var(--background)] px-2 -translate-x-1/2 text-center"
             style={{ [signY === 1 ? "top" : "bottom"]: "1%", left: vAxisLeft }}
-            title={yDesc || undefined}
           >
             <span className="whitespace-nowrap">{yLabel}</span>
+            {yDesc && <span className="block whitespace-nowrap opacity-40">{yDesc}</span>}
           </span>
         )}
         {xLabel && (
           <span
             className="absolute z-10 bg-[var(--background)] px-2 -translate-y-1/2"
             style={{ [signX === 1 ? "right" : "left"]: "1%", top: hAxisTop }}
-            title={xDesc || undefined}
           >
             <span className="whitespace-nowrap">{xLabel}</span>
+            {xDesc && <span className="block whitespace-nowrap opacity-40">{xDesc}</span>}
           </span>
         )}
       </>
@@ -383,9 +385,9 @@ export function AxisLabels({
           <span
             key={cls}
             className={`absolute z-10 bg-[var(--background)] px-2 ${cls}`}
-            title={desc || undefined}
           >
             <span className="whitespace-nowrap">{label}</span>
+            {desc && <span className="block whitespace-nowrap opacity-40">{desc}</span>}
           </span>
         ) : null;
       })}
@@ -416,9 +418,9 @@ function IsoAxisLabels({ dimensions, activePair }: { dimensions: Dimension[]; ac
               opacity: isActive ? 0.9 : 0.25,
               transition: "opacity 0.2s",
             }}
-            title={ep.desc || undefined}
           >
             <span className="whitespace-nowrap">{ep.label}</span>
+            {ep.desc && <span className="block whitespace-nowrap opacity-40">{ep.desc}</span>}
           </span>
         );
       })}
@@ -520,11 +522,11 @@ export function TriangleAxisLabels({ dimensions, onHoverDesc }: { dimensions: Di
             key={i}
             className="absolute z-10 bg-[var(--background)] px-1 -translate-x-1/2 -translate-y-1/2 text-center"
             style={{ left: `${l.left}%`, top: `${l.top}%` }}
-            title={l.desc || undefined}
             onMouseEnter={() => l.desc && onHoverDesc?.(l.desc)}
             onMouseLeave={() => onHoverDesc?.(null)}
           >
             <span className="whitespace-nowrap">{l.label}</span>
+            {l.desc && <span className="block whitespace-nowrap opacity-40">{l.desc}</span>}
           </span>
         );
       })}
