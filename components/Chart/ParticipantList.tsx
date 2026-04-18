@@ -26,8 +26,10 @@ export default function ParticipantList() {
 
   return (
     <div className="flex flex-col gap-1 w-40 bg-[var(--background)]">
-      <div className="flex gap-2 items-center">
+      <div className="flex items-center justify-between gap-1">
         <span>{allPlacements.length} fish</span>
+      </div>
+      <div className="flex gap-2 items-center">
         <button
           onClick={showAllUsers}
           className={`${allVisible ? "opacity-30" : "opacity-60"} hover:opacity-100 transition-opacity h-7`}
