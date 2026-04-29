@@ -137,7 +137,7 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
     activeFixTargetId ? (uid === activeFixTargetId ? 0.7 : 0.15) : 0.4;
 
   const onDown = useCallback(
-    (e: React.MouseEvent | React.TouchEvent) => {
+    (e: React.PointerEvent) => {
       if (!handlePointerDown(e)) handleTap(e);
     },
     [handlePointerDown, handleTap],
@@ -159,13 +159,11 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
           : !hasPlaced ? "crosshair"
           : "default",
       }}
-      onMouseDown={locked ? undefined : onDown}
-      onMouseUp={onUp}
-      onMouseMove={handlePointerMove}
-      onMouseLeave={handlePointerLeave}
-      onTouchStart={locked ? undefined : onDown}
-      onTouchEnd={onUp}
-      onTouchMove={handlePointerMove}
+      onPointerDown={locked ? undefined : onDown}
+      onPointerUp={onUp}
+      onPointerCancel={onUp}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
     >
       <Quadrants active={null} labels={axisLabels} quadrantMode={qm} />
       <Axes quadrantMode={qm} dimCount={2} />
@@ -336,16 +334,15 @@ export default function Chart() {
     (use3D || isTriangle) ? toPos3D(p.values ?? [p.x, p.y, 0]) : toPos(p, qm);
 
   // Swipe detection for multi-dim rotation (distinguishes swipe from drag/tap)
-  const swipeRef = useRef<{ x: number; y: number; event: React.MouseEvent | React.TouchEvent } | null>(null);
+  const swipeRef = useRef<{ x: number; y: number; event: React.PointerEvent } | null>(null);
 
   const wrappedDown = useCallback(
-    (e: React.MouseEvent | React.TouchEvent) => {
+    (e: React.PointerEvent) => {
       const dragStarted = handlePointerDown(e);
       if (dragStarted) return;
       if (multiDim) {
-        const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-        const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-        swipeRef.current = { x: clientX, y: clientY, event: e };
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
+        swipeRef.current = { x: e.clientX, y: e.clientY, event: e };
       } else {
         handleTap(e);
       }
@@ -354,13 +351,11 @@ export default function Chart() {
   );
 
   const wrappedUp = useCallback(
-    (e: React.MouseEvent | React.TouchEvent) => {
+    (e: React.PointerEvent) => {
       handlePointerUp();
       if (swipeRef.current) {
-        const clientX = "changedTouches" in e ? e.changedTouches[0].clientX : e.clientX;
-        const clientY = "changedTouches" in e ? e.changedTouches[0].clientY : e.clientY;
-        const dx = clientX - swipeRef.current.x;
-        const dy = clientY - swipeRef.current.y;
+        const dx = e.clientX - swipeRef.current.x;
+        const dy = e.clientY - swipeRef.current.y;
         const origEvent = swipeRef.current.event;
         swipeRef.current = null;
         if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
@@ -430,13 +425,11 @@ export default function Chart() {
                   ? "crosshair"
                   : "default",
         }}
-        onMouseDown={locked ? undefined : wrappedDown}
-        onMouseUp={wrappedUp}
-        onMouseMove={handlePointerMove}
-        onMouseLeave={handlePointerLeave}
-        onTouchStart={locked ? undefined : wrappedDown}
-        onTouchEnd={wrappedUp}
-        onTouchMove={handlePointerMove}
+        onPointerDown={locked ? undefined : wrappedDown}
+        onPointerUp={wrappedUp}
+        onPointerCancel={wrappedUp}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
       >
         {isTriangle ? (
           <>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type React from "react";
 import { Id } from "../../convex/_generated/dataModel";
 import { Point, toPos, toPos3D, fromScreen3D, fromScreenTriangle, PlacedPoint, Fix, type QuadrantMode } from "./utils";
 
@@ -126,30 +127,17 @@ export function useChartPlacement({
   );
 
   const fromEvent = useCallback(
-    (e: React.MouseEvent | React.TouchEvent, unclamped = false): Point | null => {
-      const clientX =
-        "touches" in e
-          ? (e.touches[0]?.clientX ?? (e as unknown as { changedTouches: TouchList }).changedTouches?.[0]?.clientX)
-          : (e as React.MouseEvent).clientX;
-      const clientY =
-        "touches" in e
-          ? (e.touches[0]?.clientY ?? (e as unknown as { changedTouches: TouchList }).changedTouches?.[0]?.clientY)
-          : (e as React.MouseEvent).clientY;
-      if (clientX == null || clientY == null) return null;
-      return fromClientXY(clientX, clientY, unclamped);
-    },
+    (e: React.PointerEvent, unclamped = false): Point | null =>
+      fromClientXY(e.clientX, e.clientY, unclamped),
     [fromClientXY],
   );
 
   const hitTest = useCallback(
-    (e: React.MouseEvent | React.TouchEvent): PlacedPoint | null => {
+    (e: React.PointerEvent): PlacedPoint | null => {
       const el = containerRef.current;
       if (!el) return null;
       const rect = el.getBoundingClientRect();
-      const clientX = "touches" in e ? e.touches[0]?.clientX : (e as React.MouseEvent).clientX;
-      const clientY = "touches" in e ? e.touches[0]?.clientY : (e as React.MouseEvent).clientY;
-      if (clientX == null || clientY == null) return null;
-      const clickPx = { x: clientX - rect.left, y: clientY - rect.top };
+      const clickPx = { x: e.clientX - rect.left, y: e.clientY - rect.top };
       const hitRadius = rect.width * 0.07;
       for (const other of allPlacements) {
         const sp = (use3D || isTriangle) && other.values
@@ -167,11 +155,13 @@ export function useChartPlacement({
   );
 
   // Starts a drag if pressing on a fish. Returns true if drag started.
+  // Captures the pointer so move/up fire reliably on mobile, even off-chart.
   const handlePointerDown = useCallback(
-    (e: React.MouseEvent | React.TouchEvent): boolean => {
+    (e: React.PointerEvent): boolean => {
       if (requireAuth && !requireAuth()) return false;
       const hit = hitTest(e);
       if (!hit) return false;
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
       if (hit.isMe) {
         dragRef.current = { type: "self" };
         setDraggingSelf(true);
@@ -191,7 +181,7 @@ export function useChartPlacement({
 
   // Initial placement on empty space (tap/click)
   const handleTap = useCallback(
-    (e: React.MouseEvent | React.TouchEvent) => {
+    (e: React.PointerEvent) => {
       if (requireAuth && !requireAuth()) return;
       if (hasPlaced) return;
       const p = fromEvent(e);
@@ -207,25 +197,35 @@ export function useChartPlacement({
   const [hoveredTriValues, setHoveredTriValues] = useState<number[] | null>(null);
 
   const handlePointerMove = useCallback(
-    (e: React.MouseEvent | React.TouchEvent) => {
-      const p = fromEvent(e);
-      if (p) {
+    (e: React.PointerEvent) => {
+      const drag = dragRef.current;
+      // Clamped position drives hover indicators and fix-drag
+      const pClamped = fromEvent(e);
+      if (pClamped) {
         if (isTriangle) {
-          setHoveredTriValues([p.x, p.y, -p.x - p.y]);
+          setHoveredTriValues([pClamped.x, pClamped.y, -pClamped.x - pClamped.y]);
         } else {
-          const col = p.x >= 0 ? 1 : 0;
-          const row = p.y > 0 ? 0 : 1;
+          const col = pClamped.x >= 0 ? 1 : 0;
+          const row = pClamped.y > 0 ? 0 : 1;
           setHoveredQuadrant(row * 2 + col);
         }
       }
-      if (dragRef.current) {
-        if (dragRef.current.type === "self") return;
-        if (p) setFixPos(p);
+      if (drag) {
+        if (drag.type === "self") {
+          // Unclamped lets us detect the "drag-off-edge to delete" gesture
+          const pUn = fromEvent(e, true);
+          if (!pUn) return;
+          setSelfNearEdge(Math.abs(pUn.x) > 1.3 || Math.abs(pUn.y) > 1.3);
+          setPos(pUn);
+          broadcastLive(pUn);
+        } else if (pClamped) {
+          setFixPos(pClamped);
+        }
         return;
       }
       setHoveredUserId(hitTest(e)?.userId ?? null);
     },
-    [hitTest, fromEvent, isTriangle],
+    [hitTest, fromEvent, isTriangle, broadcastLive],
   );
 
   const onDeletePlacementRef = useRef(onDeletePlacement);
@@ -273,10 +273,11 @@ export function useChartPlacement({
     setHoveredUserId(null);
   }, [onPlace, onFix, onDeleteFix, fixes, broadcastLive]);
 
+  // Pointer capture keeps drags going even off-element, so leave is purely
+  // for clearing hover state (mouse case). Defensive cleanup if a drag
+  // somehow leaks (e.g. pointer capture lost).
   const handlePointerLeave = useCallback(() => {
-    if (dragRef.current) {
-      // During self-drag, window listeners handle the release — don't cancel here
-      if (dragRef.current.type === "self") return;
+    if (dragRef.current && dragRef.current.type === "fix") {
       dragRef.current = null;
       const mp = myPlacementRef.current;
       if (mp) setPos(mp);
@@ -302,43 +303,6 @@ export function useChartPlacement({
     return toPos(pos, quadrantMode);
   })();
   const activeFixTargetId = fixTarget?.userId ?? null;
-
-  // Attach window-level listeners during self-drag so we can detect
-  // the pointer leaving the chart area and releasing outside it
-  const fromClientXYRef = useRef(fromClientXY);
-  fromClientXYRef.current = fromClientXY;
-  useEffect(() => {
-    if (!draggingSelf) return;
-    const onMove = (clientX: number, clientY: number) => {
-      const p = fromClientXYRef.current(clientX, clientY, true);
-      if (!p) return;
-      setSelfNearEdge(Math.abs(p.x) > 1.3 || Math.abs(p.y) > 1.3);
-      setPos(p);
-      broadcastLive(p);
-    };
-    const onMouseMove = (e: MouseEvent) => onMove(e.clientX, e.clientY);
-    const onTouchMove = (e: TouchEvent) => {
-      e.preventDefault();
-      const t = e.touches[0];
-      if (t) onMove(t.clientX, t.clientY);
-    };
-    const onUp = () => {
-      if (!dragRef.current || dragRef.current.type !== "self") return;
-      handlePointerUp();
-    };
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onUp);
-    window.addEventListener("touchmove", onTouchMove, { passive: false });
-    window.addEventListener("touchend", onUp);
-    window.addEventListener("touchcancel", onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onUp);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("touchend", onUp);
-      window.removeEventListener("touchcancel", onUp);
-    };
-  }, [draggingSelf, handlePointerUp, broadcastLive]);
 
   const fixNearOrigin = (() => {
     if (!fixTarget || !fixPos) return false;
