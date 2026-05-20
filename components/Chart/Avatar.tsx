@@ -81,7 +81,8 @@ export function Avatar({
           height={200}
           src={image}
           alt={name}
-          className="rounded-full object-cover w-full scale-120"
+          draggable={false}
+          className="rounded-full object-cover w-full scale-120 pointer-events-none select-none [-webkit-user-drag:none] [-webkit-touch-callout:none]"
         />
       </div>
     </div>
