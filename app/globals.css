@@ -95,6 +95,15 @@ img {
   animation: wiggle-hard 0.25s ease-in-out infinite;
 }
 
+/* Crisp silhouette outline: 4-direction drop-shadows, doubled to
+   saturate the alpha so soft image edges don't read as blur. */
+@utility outline-silhouette {
+  filter: drop-shadow(0.25px 0 0 var(--foreground)) drop-shadow(-0.25px 0 0 var(--foreground))
+    drop-shadow(0 0.25px 0 var(--foreground)) drop-shadow(0 -0.25px 0 var(--foreground))
+    drop-shadow(0.25px 0 0 var(--foreground)) drop-shadow(-0.25px 0 0 var(--foreground))
+    drop-shadow(0 0.25px 0 var(--foreground)) drop-shadow(0 -0.25px 0 var(--foreground));
+}
+
 @keyframes fade-out {
   from { opacity: 1; }
   to { opacity: 0; }

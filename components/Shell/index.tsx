@@ -16,6 +16,7 @@ import { useMutation } from "convex/react";
 import { useChart } from "../Chart/ChartProvider";
 import { getUserName } from "../utils";
 import { useLoginModal } from "../LoginModal";
+import { Hovertext, useHovertext } from "../Hovertext";
 import { twMerge } from "tailwind-merge";
 
 export default function Shell({
@@ -31,6 +32,7 @@ export default function Shell({
   const { isAuthenticated } = useConvexAuth();
   const { signOut } = useAuthActions();
   const { requireAuth } = useLoginModal();
+  const { setHoverText } = useHovertext();
   const user = useQuery(api.users.currentUser);
   const comparison = useQuery(
     api.comparisons.get,
@@ -88,7 +90,7 @@ export default function Shell({
   const label = comparison ? formatLabel(comparison) : "";
 
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center p-4 pt-32 sm:pt-4">
+    <div className="flex flex-col min-h-screen items-center justify-center p-4 pt-10">
       {coverVisible && (
         <div className="fixed inset-0 z-50 bg-[var(--background)] flex items-center justify-center">
           <p>loading...</p>
@@ -104,17 +106,18 @@ export default function Shell({
         <div className="flex justify-between w-full h-full items-start">
           {comparison ? (
             <div className={twMerge("flex flex-1 flex-col", label.length < 8 && "flex-row gap-2")}>
-              <div className="flex items-center gap-2">
-                <span
-                  className="cursor-pointer hover:opacity-60 transition-opacity"
-                  onClick={() => {
-                    if (comparisonId) sessionStorage.setItem("explore-scroll-to", comparisonId);
-                    router.push("/explore");
-                  }}
-                  title="Back to explore"
-                >
-                  &larr;
-                </span>
+              <div className="flex gap-2 flex-col">
+                <Hovertext text="Back to explore">
+                  <h2
+                    className="cursor-pointer w-fit hover:bg-[var(--foreground)] hover:text-black"
+                    onClick={() => {
+                      if (comparisonId) sessionStorage.setItem("explore-scroll-to", comparisonId);
+                      router.push("/explore");
+                    }}
+                  >
+                    <span className="text-3xl">&larr;</span><span className="text-2xl"> back</span>
+                  </h2>
+                </Hovertext>
                 <h1 className="text-3xl font-semibold tracking-tight">
                   {label}
                 </h1>
@@ -131,22 +134,29 @@ export default function Shell({
                 >
                   About
                 </a>
-                {isAuthenticated && (<a
+                {isAuthenticated ? (<a
                   onClick={signOut}
                   className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black"
                 >
                   Logout
-                </a>)}
+                </a>) : (
+                  <a 
+                    onClick={() => requireAuth()}
+                    className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black"
+                  >
+                    Login
+                  </a>
+                )}
               </div>
             </div>
           )}
 
           <div className="flex items-center gap-3 justify-between">
             {isAuthenticated && user && (
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-4 items-center">
                 {editingName ? (
-                  <div className="flex flex-col items-end gap-1">
-                    <div className="flex items-center gap-1">
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="flex items-center gap-2">
                       <input
                         autoFocus
                         value={userNameDraft}
@@ -176,37 +186,40 @@ export default function Shell({
                     {nameError && <span className="text-xs text-red-400">{nameError}</span>}
                   </div>
                 ) : (
-                  <p
-                    className="text-sm cursor-pointer hover:underline"
-                    onClick={() => { setUserNameDraft(user.name ?? ""); setEditingName(true); setNameError(""); }}
-                    title="Click to edit display name"
-                  >
-                    {getUserName({
-                      id: user._id ?? "unknown",
-                      name: user.name ?? "",
-                      getFirst: true
-                    })}
-                  </p>
-                )}
-                <div className="flex gap-4 items-center bg-[#85D45A6D] rounded-lg">
-                  <Image
-                    src={
-                      resolveImage({
+                  <Hovertext text="Click to edit display name">
+                    <p
+                      className="text-sm cursor-pointer hover:underline"
+                      onClick={() => { setUserNameDraft(user.name ?? ""); setEditingName(true); setNameError(""); }}
+                    >
+                      {getUserName({
+                        id: user._id ?? "unknown",
                         name: user.name ?? "",
-                        avatar: user.avatar,
-                      }) ?? ""
-                    }
-                    alt={user.name || ""}
-                    width={40}
-                    height={40}
-                    className="object-cover transition-opacity hover:opacity-80 hover:animate-wiggle cursor-pointer h-8"
-                    onClick={() => setPickerOpen(!pickerOpen)}
-                  />
-                  <AvatarPicker
-                    open={pickerOpen}
-                    onClose={() => setPickerOpen(false)}
-                    current={resolveAvatar(user.name, user.avatar)}
-                  />
+                        getFirst: true
+                      })}
+                    </p>
+                  </Hovertext>
+                )}
+                <div className="flex gap-4 items-center">
+                  <Hovertext text="Click to edit display fish">
+                    <Image
+                      src={
+                        resolveImage({
+                          name: user.name ?? "",
+                          avatar: user.avatar,
+                        }) ?? ""
+                      }
+                      alt={user.name || ""}
+                      width={40}
+                      height={40}
+                      className="object-cover transition-opacity hover:opacity-80 hover:animate-wiggle cursor-pointer h-10 scale-180 outline-silhouette"
+                      onClick={() => { setHoverText(null); setPickerOpen(!pickerOpen); }}
+                    />
+                    <AvatarPicker
+                      open={pickerOpen}
+                      onClose={() => setPickerOpen(false)}
+                      current={resolveAvatar(user.name, user.avatar)}
+                    />
+                  </Hovertext>
                 </div>
               </div>
             )}
@@ -215,24 +228,6 @@ export default function Shell({
         {comparisonId && (
           <div className="flex w-full items-center gap-2">
             <div className="flex flex-col w-full">
-              <p>
-                <a
-                  className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
-                  onClick={() => {
-                    if (comparisonId) sessionStorage.setItem("explore-scroll-to", comparisonId);
-                    router.push("/explore");
-                  }}
-                >
-                  More plots
-                </a>
-                {" / "}
-                <a
-                  className="underline cursor-pointer hover:bg-[var(--foreground)] hover:text-black py-1"
-                  onClick={() => requireAuth() && setCreating(true)}
-                >
-                  + New plot
-                </a>
-              </p>
               <p className="text-[var(--highlight)]">
                 {isMine && (
                   <>

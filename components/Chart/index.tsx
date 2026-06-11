@@ -102,7 +102,7 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
     containerRef, myDot, hasPlaced, fixTarget, fixPos,
     hoveredUserId, hoveredQuadrant, activeFixTargetId,
     draggingSelf, handlePointerDown, handleTap,
-    handlePointerMove, handlePointerUp, handlePointerLeave,
+    handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave,
     fixNearOrigin, selfNearEdge: miniSelfNearEdge,
   } = useChartPlacement({
     myPlacement,
@@ -142,10 +142,14 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
     },
     [handlePointerDown, handleTap],
   );
-  const onUp = useCallback(() => {
-    handlePointerUp();
+  const onUp = useCallback((e: React.PointerEvent) => {
+    handlePointerUp(e);
     handlePointerLeave();
   }, [handlePointerUp, handlePointerLeave]);
+  const onCancel = useCallback((e: React.PointerEvent) => {
+    handlePointerCancel(e);
+    handlePointerLeave();
+  }, [handlePointerCancel, handlePointerLeave]);
 
   return (
     <div
@@ -161,7 +165,7 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
       }}
       onPointerDown={locked ? undefined : onDown}
       onPointerUp={onUp}
-      onPointerCancel={onUp}
+      onPointerCancel={onCancel}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
     >
@@ -297,6 +301,7 @@ export default function Chart() {
     handleTap,
     handlePointerMove,
     handlePointerUp,
+    handlePointerCancel,
     handlePointerLeave,
     hoveredQuadrant,
     fixNearOrigin,
@@ -341,6 +346,7 @@ export default function Chart() {
       const dragStarted = handlePointerDown(e);
       if (dragStarted) return;
       if (multiDim) {
+        if (swipeRef.current) return; // ignore extra touches mid-swipe
         try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
         swipeRef.current = { x: e.clientX, y: e.clientY, event: e };
       } else {
@@ -352,8 +358,8 @@ export default function Chart() {
 
   const wrappedUp = useCallback(
     (e: React.PointerEvent) => {
-      handlePointerUp();
-      if (swipeRef.current) {
+      handlePointerUp(e);
+      if (swipeRef.current && e.pointerId === swipeRef.current.event.pointerId) {
         const dx = e.clientX - swipeRef.current.x;
         const dy = e.clientY - swipeRef.current.y;
         const origEvent = swipeRef.current.event;
@@ -371,6 +377,17 @@ export default function Chart() {
       handlePointerLeave();
     },
     [handlePointerUp, handlePointerLeave, handleTap, viewIndex, totalViews, setViewIndex],
+  );
+
+  // Cancelled gestures revert the drag and never tap/swipe
+  const wrappedCancel = useCallback(
+    (e: React.PointerEvent) => {
+      handlePointerCancel(e);
+      if (swipeRef.current && e.pointerId === swipeRef.current.event.pointerId)
+        swipeRef.current = null;
+      handlePointerLeave();
+    },
+    [handlePointerCancel, handlePointerLeave],
   );
 
   const hoverLabel = (() => {
@@ -427,7 +444,7 @@ export default function Chart() {
         }}
         onPointerDown={locked ? undefined : wrappedDown}
         onPointerUp={wrappedUp}
-        onPointerCancel={wrappedUp}
+        onPointerCancel={wrappedCancel}
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
       >

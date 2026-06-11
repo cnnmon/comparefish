@@ -349,7 +349,7 @@ export function CreatePlotModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.15 }}
-          className="fixed inset-0 z-[1] flex items-center justify-center overflow-y-auto bg-[var(--background)]/60"
+          className="fixed inset-0 z-[5] p-2 flex items-center justify-center overflow-y-auto bg-[var(--background)]/60"
           onClick={onClose}
         >
           <motion.div
@@ -515,7 +515,7 @@ export function ComparisonPicker({
                   setCreating(true);
                   setOpen(false);
                 }}
-                className="flex w-full items-center gap-2 px-4 py-3 text-left border-b-[var(--foreground)] border-b-1 hover:bg-[var(--foreground)] hover:text-black cursor-pointer"
+                className="flex w-full items-center gap-2 text-left border-b-[var(--foreground)] border-b-1 hover:bg-[var(--foreground)] hover:text-black cursor-pointer px-4 py-3"
               >
                 + New plot
               </p>

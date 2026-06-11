@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useChart } from "./ChartProvider";
 import { resolveImage } from "./utils";
@@ -9,6 +9,14 @@ import { getUserName } from "../utils";
 export default function ParticipantList() {
   const ctx = useChart();
   const [search, setSearch] = useState("");
+  // Visibility applied to rows dragged over; null = not dragging
+  const dragTo = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    const stop = () => { dragTo.current = null; };
+    window.addEventListener("mouseup", stop);
+    return () => window.removeEventListener("mouseup", stop);
+  }, []);
 
   if (!ctx) return null;
   const { allPlacements, hiddenUserIds, toggleUser, showAllUsers, hideAllUsers } = ctx;
@@ -32,14 +40,14 @@ export default function ParticipantList() {
       <div className="flex gap-2 items-center">
         <button
           onClick={showAllUsers}
-          className={`${allVisible ? "opacity-30" : "opacity-60"} hover:opacity-100 transition-opacity h-7`}
+          className={`${allVisible ? "bg-[var(--foreground)]! text-black!" : "opacity-60"} h-7`}
           disabled={allVisible}
         >
           All
         </button>
         <button
           onClick={hideAllUsers}
-          className={`${noneVisible ? "opacity-30" : "opacity-60"} hover:opacity-100 transition-opacity h-7`}
+          className={`${noneVisible ? "bg-[var(--foreground)]! text-black!" : "opacity-60"} h-7`}
           disabled={noneVisible}
         >
           None

@@ -51,8 +51,10 @@ export function useChartPlacement({
   const [draggingSelf, setDraggingSelf] = useState(false);
   const [selfNearEdge, setSelfNearEdge] = useState(false);
 
-  // Drag tracking via ref to avoid stale closures in move/up handlers
-  const dragRef = useRef<{ type: "self" | "fix"; target?: PlacedPoint } | null>(null);
+  // Drag tracking via ref to avoid stale closures in move/up handlers.
+  // pointerId guards against multi-touch: only the finger that started the
+  // drag may move/end it (a second finger would otherwise hijack the drag).
+  const dragRef = useRef<{ type: "self" | "fix"; target?: PlacedPoint; pointerId: number } | null>(null);
   const posRef = useRef(pos);
   posRef.current = pos;
   const fixPosRef = useRef(fixPos);
@@ -138,7 +140,8 @@ export function useChartPlacement({
       if (!el) return null;
       const rect = el.getBoundingClientRect();
       const clickPx = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      const hitRadius = rect.width * 0.07;
+      // Fingers are less precise than a mouse cursor
+      const hitRadius = rect.width * (e.pointerType === "touch" ? 0.09 : 0.07);
       for (const other of allPlacements) {
         const sp = (use3D || isTriangle) && other.values
           ? toPos3D(other.values)
@@ -151,7 +154,7 @@ export function useChartPlacement({
       }
       return null;
     },
-    [allPlacements, quadrantMode, use3D],
+    [allPlacements, quadrantMode, use3D, isTriangle],
   );
 
   // Starts a drag if pressing on a fish. Returns true if drag started.
@@ -159,14 +162,17 @@ export function useChartPlacement({
   const handlePointerDown = useCallback(
     (e: React.PointerEvent): boolean => {
       if (requireAuth && !requireAuth()) return false;
+      // A drag is already in progress: swallow extra touches so they can't
+      // start a second drag, tap, or swipe.
+      if (dragRef.current) return true;
       const hit = hitTest(e);
       if (!hit) return false;
       try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
       if (hit.isMe) {
-        dragRef.current = { type: "self" };
+        dragRef.current = { type: "self", pointerId: e.pointerId };
         setDraggingSelf(true);
       } else {
-        dragRef.current = { type: "fix", target: hit };
+        dragRef.current = { type: "fix", target: hit, pointerId: e.pointerId };
         setFixTarget(hit);
         const existing = fixes.find(
           (f) => f.isMine && f.targetUserId === hit.userId,
@@ -199,6 +205,7 @@ export function useChartPlacement({
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
       const drag = dragRef.current;
+      if (drag && e.pointerId !== drag.pointerId) return;
       // Clamped position drives hover indicators and fix-drag
       const pClamped = fromEvent(e);
       if (pClamped) {
@@ -233,9 +240,10 @@ export function useChartPlacement({
   const selfNearEdgeRef = useRef(false);
   selfNearEdgeRef.current = selfNearEdge;
 
-  const handlePointerUp = useCallback(() => {
-    if (!dragRef.current) return;
+  const handlePointerUp = useCallback((e?: React.PointerEvent) => {
     const drag = dragRef.current;
+    if (!drag) return;
+    if (e && e.pointerId !== drag.pointerId) return;
     dragRef.current = null;
     if (drag.type === "self") {
       const wasNearEdge = selfNearEdgeRef.current;
@@ -261,8 +269,11 @@ export function useChartPlacement({
         const existingFix = fixes.find(
           (f) => f.isMine && f.targetUserId === drag.target!.userId,
         );
-        if (nearOrigin && existingFix && onDeleteFix) {
-          onDeleteFix(existingFix._id);
+        // Near-origin release: cancel the existing fix, or — if there is
+        // none — do nothing, so a bare tap on a fish doesn't create a
+        // zero-length fix (easy to do accidentally on touch).
+        if (nearOrigin) {
+          if (existingFix && onDeleteFix) onDeleteFix(existingFix._id);
         } else {
           onFix(drag.target.userId as Id<"users">, p.x, p.y);
         }
@@ -273,22 +284,35 @@ export function useChartPlacement({
     setHoveredUserId(null);
   }, [onPlace, onFix, onDeleteFix, fixes, broadcastLive]);
 
-  // Pointer capture keeps drags going even off-element, so leave is purely
-  // for clearing hover state (mouse case). Defensive cleanup if a drag
-  // somehow leaks (e.g. pointer capture lost).
-  const handlePointerLeave = useCallback(() => {
-    if (dragRef.current && dragRef.current.type === "fix") {
-      dragRef.current = null;
+  // Abort the drag without committing anything. iOS fires pointercancel for
+  // system gestures mid-drag; committing there would place fixes at random
+  // spots, so we revert instead.
+  const handlePointerCancel = useCallback((e?: React.PointerEvent) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    if (e && e.pointerId !== drag.pointerId) return;
+    dragRef.current = null;
+    if (drag.type === "self") {
+      setDraggingSelf(false);
+      setSelfNearEdge(false);
       const mp = myPlacementRef.current;
       if (mp) setPos(mp);
-      setFixTarget(null);
-      setFixPos(null);
       broadcastLive(null);
     }
+    setFixTarget(null);
+    setFixPos(null);
+    setHoveredUserId(null);
+  }, [broadcastLive]);
+
+  // Leave only clears hover state (mouse case). iOS Safari fires spurious
+  // pointerleave mid-drag even with pointer capture, so never touch an
+  // active drag here — up/cancel handle real endings.
+  const handlePointerLeave = useCallback(() => {
+    if (dragRef.current) return;
     setHoveredQuadrant(null);
     setHoveredTriValues(null);
     setHoveredUserId(null);
-  }, [broadcastLive]);
+  }, []);
 
   const myDot = (() => {
     if (isTriangle) {
@@ -327,6 +351,7 @@ export function useChartPlacement({
     handleTap,
     handlePointerMove,
     handlePointerUp,
+    handlePointerCancel,
     handlePointerLeave,
     fixNearOrigin,
     selfNearEdge,
