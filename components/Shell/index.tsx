@@ -92,8 +92,8 @@ export default function Shell({
   return (
     <div className="flex flex-col min-h-screen items-center justify-center p-4 pt-10">
       {coverVisible && (
-        <div className="fixed inset-0 z-50 bg-[var(--background)] flex items-center justify-center">
-          <p>loading...</p>
+        <div className="fixed inset-0 z-[10] bg-[var(--background)] flex items-center justify-center">
+          <h1>loading...</h1>
         </div>
       )}
       {!coverVisible && (
@@ -105,7 +105,7 @@ export default function Shell({
       <div className="flex flex-col w-full absolute top-0 p-4">
         <div className="flex justify-between w-full h-full items-start">
           {comparison ? (
-            <div className={twMerge("flex flex-1 flex-col", label.length < 8 && "flex-row gap-2")}>
+            <div>
               <div className="flex gap-2 flex-col">
                 <Hovertext text="Back to explore">
                   <h2

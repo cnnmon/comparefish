@@ -61,7 +61,15 @@ export default function ParticipantList() {
           return (
             <a
               key={p.userId}
-              onClick={() => toggleUser(p.userId)}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                dragTo.current = !visible;
+                toggleUser(p.userId);
+              }}
+              onMouseEnter={() => {
+                if (dragTo.current !== null && visible !== dragTo.current)
+                  toggleUser(p.userId);
+              }}
               className={`flex items-center gap-1.5 px-1 py-0.5 rounded hover:bg-[var(--foreground)]/10 transition-opacity cursor-pointer hover:underline ${
                 visible ? "opacity-100" : "opacity-30"
               }`}
