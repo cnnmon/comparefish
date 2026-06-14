@@ -12,42 +12,18 @@ import { motion } from "framer-motion";
 import { getUserName } from "../utils";
 import { Id } from "../../convex/_generated/dataModel";
 import ParticipantList from "./ParticipantList";
+import { useHovertext } from "../Hovertext";
 
 export { ChartProvider } from "./ChartProvider";
 
-function CursorLabel({
-  containerRef,
-  label,
-}: {
-  containerRef: React.RefObject<HTMLDivElement | null>;
-  label: string | null;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
+/** Drives the global hovertext while the given label is non-null. */
+function useCursorLabel(label: string | null) {
+  const { setHoverText } = useHovertext();
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const onMove = (e: MouseEvent) => {
-      if (ref.current) {
-        ref.current.style.left = `${e.clientX + 14}px`;
-        ref.current.style.top = `${e.clientY}px`;
-      }
-    };
-    el.addEventListener("mousemove", onMove);
-    return () => el.removeEventListener("mousemove", onMove);
-  }, [containerRef]);
-
-  if (!label) return null;
-
-  return (
-    <div
-      ref={ref}
-      className="fixed pointer-events-none z-50 text-xs px-2 py-1 rounded transition-opacity duration-75 bg-[var(--background)] border-1 border-[var(--foreground)] max-w-48 break-words"
-      style={{ opacity: label ? 1 : 0, transform: "translateY(-50%)" }}
-    >
-      {label}
-    </div>
-  );
+    if (!label) return;
+    setHoverText(label);
+    return () => setHoverText(null);
+  }, [label, setHoverText]);
 }
 
 function MiniChart2D({ pair }: { pair: [number, number] }) {
@@ -150,6 +126,12 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
     handlePointerCancel(e);
     handlePointerLeave();
   }, [handlePointerCancel, handlePointerLeave]);
+
+  useCursorLabel(
+    draggingSelf && miniSelfNearEdge ? "Clear placement?"
+      : fixTarget && fixNearOrigin ? "Cancel fix?"
+      : null,
+  );
 
   return (
     <div
@@ -266,12 +248,6 @@ function MiniChart2D({ pair }: { pair: [number, number] }) {
           }
         />
       )}
-
-      <CursorLabel containerRef={containerRef} label={
-        draggingSelf && miniSelfNearEdge ? "Clear placement?"
-          : fixTarget && fixNearOrigin ? "Cancel fix?"
-          : null
-      } />
     </div>
   );
 }
@@ -405,6 +381,7 @@ export default function Chart() {
     if (hoveredDesc) return hoveredDesc;
     return null;
   })();
+  useCursorLabel(hoverLabel);
 
   // Users connected to the hovered fish via fixes
   const connectedToHovered = new Set<string>();
@@ -647,8 +624,6 @@ export default function Chart() {
             }
           />
         )}
-
-        <CursorLabel containerRef={containerRef} label={hoverLabel} />
       </div>
   );
 

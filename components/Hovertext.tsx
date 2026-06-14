@@ -43,7 +43,7 @@ export function HovertextProvider({ children }: { children: ReactNode }) {
       {children}
       {tip && (
         <span
-          className="pointer-events-none fixed z-50 max-w-60 rounded border border-[var(--foreground)] bg-[var(--background)] px-2 py-0.5 text-sm"
+          className="pointer-events-none fixed z-50 max-w-60 rounded border border-[var(--foreground)] bg-[var(--background)] px-2 py-0.5 text-sm md:block hidden"
           style={{
             top: tip.y + 12,
             // flip to the other side of the cursor near the screen edge
