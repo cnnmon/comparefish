@@ -35,7 +35,12 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
         <div className="flex flex-col items-center gap-4 py-2">
           <p>Sign in to place yourself, fix others, and create your own plots.</p>
           <button
-            onClick={() => void signIn("google")}
+            onClick={() =>
+              // Return to the page (e.g. the graph) the user was on after OAuth
+              void signIn("google", {
+                redirectTo: window.location.pathname + window.location.search,
+              })
+            }
             className="w-full flex items-center justify-center gap-2"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
