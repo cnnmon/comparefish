@@ -6,14 +6,17 @@ const nextConfig: NextConfig = {
       { hostname: "lh3.googleusercontent.com" },
     ],
   },
-  // Keep everything on one canonical domain so auth cookies persist
+  // Vercel already redirects the apex to www; sending www back to the apex
+  // caused ERR_TOO_MANY_REDIRECTS. Canonical host is www.comparefish.site.
   async redirects() {
-    return ["comparefish.vercel.app", "www.comparefish.site"].map((host) => ({
-      source: "/:path*",
-      has: [{ type: "host" as const, value: host }],
-      destination: "https://comparefish.site/:path*",
-      permanent: true,
-    }));
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host" as const, value: "comparefish.vercel.app" }],
+        destination: "https://www.comparefish.site/:path*",
+        permanent: true,
+      },
+    ];
   },
 };
 

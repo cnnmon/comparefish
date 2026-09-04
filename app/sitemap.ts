@@ -3,7 +3,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://comparefish.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.comparefish.site";
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
